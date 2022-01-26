@@ -1,3 +1,4 @@
 /.DS_Store
-/cache
+/cache/*
 /config.json
+__pycache__*
