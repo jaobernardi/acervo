@@ -24,5 +24,8 @@ def get_api_secret():
 def get_access_token():
     return get_data()["access_token"]
 
+def get_image_id():
+    return get_data()["image_thread"]
+
 def get_access_token_secret():
     return get_data()["access_token_secret"]

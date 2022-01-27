@@ -5,6 +5,7 @@ from lib import tweet_utils, config, database
 import tweepy
 import logging
 import os
+import requests
 
 @pyding.on("mention")
 def mention(event, status, client: tweepy.Client, api: tweepy.API):
@@ -20,12 +21,14 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
                 return
             
             # Check if it is an reply
-            if hasattr("in_reply_to_status_id"):                
+            if hasattr(status, "in_reply_to_status_id"):                
                 # Retrieve original tweet
-                tweet = client.get_tweet(status.in_reply_to_status_id, user_auth=True, expansions="attachments.media_keys")
+                tweet_id = status.in_reply_to_status_id
             else:
                 # Get the status
-                tweet = client.get_tweet(status.id, user_auth=True, expansions="attachments.media_keys")
+                tweet_id = status.id
+
+            tweet = client.get_tweet(tweet_id, user_auth=True, expansions="attachments.media_keys", media_fields="url")
 
             # Check if there is any media in the tweet
             if "media" not in tweet.includes:
@@ -46,7 +49,33 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
                     archived = client.create_tweet(text=title, media_ids=[media.media_id_string], in_reply_to_tweet_id=config.get_video_id())
 
                     # Update the database
-                    database.add_video_entry(media.media_id_string, " ".join(text), category, f"https://twitter.com/arquivodojao/status/{archived.data['id']}")
+                    database.add_media_entry(media.media_id_string, " ".join(text), category, f"https://twitter.com/arquivodojao/status/{archived.data['id']}", "video")
+
+                    # Notify the user
+                    response = client.create_tweet(text=f"📖 — Esta mídia foi incluída no acervo sob a categoria '{category}'.", in_reply_to_tweet_id=status.id, quote_tweet_id=archived.data["id"])
+                    client.like(status.id)
+                    client.retweet(archived.data["id"])
+                    return
+                elif media.type == "photo":
+                    # Retrieve the image
+                    file = "cache/"+os.path.basename(media.url)
+                    req = requests.get(media.url, stream=True)
+                    
+                    with open(file, "wb") as f:
+                        for chunk in req.iter_content(1024):
+                            f.write(chunk)
+
+
+                    # Process the indexing
+                    title = " ".join(title)
+                    category, *text = title.split(" — ") if " — " in title else ('Diverso/Não específico', title)  
+
+                    # Upload the file and create the tweet 
+                    media = api.media_upload(file)
+                    archived = client.create_tweet(text=title, media_ids=[media.media_id_string], in_reply_to_tweet_id=config.get_image_id())
+
+                    # Update the database
+                    database.add_media_entry(media.media_id_string, " ".join(text), category, f"https://twitter.com/arquivodojao/status/{archived.data['id']}", "photo")
 
                     # Notify the user
                     response = client.create_tweet(text=f"📖 — Esta mídia foi incluída no acervo sob a categoria '{category}'.", in_reply_to_tweet_id=status.id, quote_tweet_id=archived.data["id"])

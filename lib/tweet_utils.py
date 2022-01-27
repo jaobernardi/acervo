@@ -19,7 +19,7 @@ def add_video_from_id(id, title):
     media = api.media_upload(file)
     archived = client.create_tweet(text=title, media_ids=[media.media_id_string], in_reply_to_tweet_id=config.get_video_id())
 
-    database.add_video_entry(media.media_id_string, " ".join(text), category, f"https://twitter.com/arquivodojao/status/{archived.data['id']}")
+    database.add_media_entry(media.media_id_string, " ".join(text), category, f"https://twitter.com/arquivodojao/status/{archived.data['id']}", "video")
 
     client.retweet(archived.data["id"])
 
@@ -31,7 +31,7 @@ def rectify_video_entry(tweet_id):
     category, *text = title.split(" — ") if " — " in title else ('Diverso/Não específico', title)  
     media = str(tweet.includes['media'][0].media_key.split("_")[1])
 
-    database.add_video_entry(media, " ".join(text).split("http")[0], category, f"https://twitter.com/arquivodojao/status/{tweet.data['id']}")
+    database.add_media_entry(media, " ".join(text).split("http")[0], category, f"https://twitter.com/arquivodojao/status/{tweet.data['id']}", "video")
 
 def send_request(session, url,method,headers):
     request = session.get(url, headers=headers) if method == "GET" else session.post(url, headers=headers)
