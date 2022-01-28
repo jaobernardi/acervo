@@ -33,7 +33,7 @@ def add_inclusion_entry(tweet_id, text, link):
     con = sqlite3.connect("database.sql")
     cur = con.cursor()
     id = str(uuid.uuid4())
-    cur.execute("INSERT INTO `add_queue`(`uuid`, `tweet_id`, `text`, `link`, `time`) VALUES (?, ?, ?, ?, ?)", (id, tweet_id, link, datetime.now()))
+    cur.execute("INSERT INTO `add_queue`(`uuid`, `tweet_id`, `text`, `link`, `time`) VALUES (?, ?, ?, ?, ?)", (id, tweet_id, text, link, datetime.now()))
     con.commit()
     con.close()
     return id
