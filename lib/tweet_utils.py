@@ -28,6 +28,14 @@ def add_video_from_id(id, title):
     client.retweet(archived.data["id"])
 
 
+def send_dms(recipients, *args, **kwargs):
+    api = auth.get_api()
+    out = []
+    for id in recipients:
+        out.append(api.send_direct_message(id, *args, **kwargs))
+    return out
+
+
 def rectify_video_entry(tweet_id):
     client = auth.get_client()
     tweet = client.get_tweet(tweet_id, expansions="attachments.media_keys", user_auth=True)

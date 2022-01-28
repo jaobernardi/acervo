@@ -16,15 +16,29 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
         tokens = [i for i in status.extended_tweet['full_text'].split(" ")[1:] if not i.startswith("@")]
 
     match tokens:
+            
         case ["adicionar", *title]:
             # Check if author is an admin (placeholder solution)
-            if status.user.screen_name not in config.get_admin():
-                client.create_tweet(text=f"🔮 — Sua solicitação de inclusão será submetida a análise e poderá ser aceita ou indeferida. ;)\n\n(Você será notificade pela sua DM sobre a situação da sua solicitação)", in_reply_to_tweet_id=status.id)
-                database.add_mention_entry(status.id, " ".join(tokens), f"https://twitter.com/{status.user.screen_name}/status/{status.id}")
+            if status.user.id not in config.get_admin():
+                client.create_tweet(text=f"🔮 — Sua solicitação de inclusão será submetida a análise e poderá ser aceita ou indeferida. ;)\n\n(Você pode acompanhar a situação da sua solicitação pela DM)", direct_message_deep_link="https://twitter.com/messages/compose?recipient_id=1306855576081772544", in_reply_to_tweet_id=status.id)
+                id = database.add_inclusion_entry(status.id, " ".join(tokens), f"https://twitter.com/{status.user.screen_name}/status/{status.id}")
+                options = [
+                    {
+                    "label": "Aprovado",
+                    "description": "Solicitação ficará aprovada.",
+                    "metadata": f"approved-{id}"
+                    },
+                    {
+                    "label": "Indeferido",
+                    "description": "Solicitação ficará indeferida por ser duplicata ou inadequada.",
+                    "metadata": f"reject-{id}"
+                    }
+                ]
+                tweet_utils.send_dms(config.get_admin(), text=f"Olá! O seguinte requerimento aguarda deferimento:\nhttps://twitter.com/{status.user.screen_name}/status/{status.id}", quick_reply_options=options)
                 return
             
             # Check if it is an reply
-            if hasattr(status, "in_reply_to_status_id"):                
+            if status.in_reply_to_status_id:                
                 # Retrieve original tweet
                 tweet_id = status.in_reply_to_status_id
             else:
