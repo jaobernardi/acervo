@@ -7,6 +7,7 @@ def setup_tables():
     cur = con.cursor()
 
     cur.execute("CREATE TABLE `status_mention` (`id` INT(32), `text` MEDIUMTEXT, `link` TEXT, `time` DATETIME);")
+    cur.execute("CREATE TABLE `add_queue` (`uuid` TEXT(36), `tweet_id` INT(32), `text` MEDIUMTEXT, `link` TEXT, `time` DATETIME);")
     cur.execute("CREATE TABLE `media_index` (`uuid` TEXT(36), `media_id` MEDIUMTEXT, `text` MEDIUMTEXT, `link` TEXT, `time` DATETIME, `category` TEXT, `media_type` TEXT);")
     con.commit()
     con.close()
@@ -26,6 +27,16 @@ def add_mention_entry(id, text, link):
     cur.execute("INSERT INTO `status_mention`(`id`, `text`, `link`, `time`) VALUES (?, ?, ?, ?)", (id, text, link, datetime.now()))
     con.commit()
     con.close()
+
+
+def add_inclusion_entry(tweet_id, text, link):
+    con = sqlite3.connect("database.sql")
+    cur = con.cursor()
+    id = str(uuid.uuid4())
+    cur.execute("INSERT INTO `add_queue`(`uuid`, `tweet_id`, `text`, `link`, `time`) VALUES (?, ?, ?, ?, ?)", (id, tweet_id, link, datetime.now()))
+    con.commit()
+    con.close()
+    return id
 
 
 def clear_video_entries():

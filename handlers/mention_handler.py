@@ -19,6 +19,8 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
         case ["adicionar", *title]:
             # Check if author is an admin (placeholder solution)
             if status.user.screen_name not in config.get_admin():
+                client.create_tweet(text=f"🔮 — Sua solicitação de inclusão será submetida a análise e poderá ser aceita ou indeferida. ;)\n\n(Você será notificade pela sua DM sobre a situação da sua solicitação)", in_reply_to_tweet_id=status.id)
+                database.add_mention_entry(status.id, " ".join(tokens), f"https://twitter.com/{status.user.screen_name}/status/{status.id}")
                 return
             
             # Check if it is an reply
