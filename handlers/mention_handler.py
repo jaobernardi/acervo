@@ -1,3 +1,4 @@
+from nis import cat
 from attr import has
 import pyding
 from requests_toolbelt import user_agent
@@ -16,8 +17,8 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
 
     match tokens:
         case ["adicionar", *title]:
-            # Check if author is the owner (placeholder solution)
-            if status.user.id != 1015394259032313861:
+            # Check if author is an admin (placeholder solution)
+            if status.user.screen_name not in config.get_admin():
                 return
             
             # Check if it is an reply
@@ -34,28 +35,22 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
             if "media" not in tweet.includes:
                 return
             
+            # Signal acknowledgement
+            client.like(status.id)
+
             # Retrieve media
             for media in tweet.includes["media"]:
-                if media.type == "video":
+                if media.type == "animated_gif":
+                    file = tweet_utils.save_video_as_gif_from_tweet(status.in_reply_to_status_id)
+                    media_type = "gif"
+                    break
+
+                elif media.type == "video":
                     # Retrieve the video
                     file = tweet_utils.save_video_from_tweet(status.in_reply_to_status_id)
-                    
-                    # Process the indexing
-                    title = " ".join(title)
-                    category, *text = title.split(" — ") if " — " in title else ('Diverso/Não específico', title)  
+                    media_type = "video"
+                    break
 
-                    # Upload the file and create the tweet 
-                    media = api.media_upload(file)
-                    archived = client.create_tweet(text=title, media_ids=[media.media_id_string], in_reply_to_tweet_id=config.get_video_id())
-
-                    # Update the database
-                    database.add_media_entry(media.media_id_string, " ".join(text), category, f"https://twitter.com/arquivodojao/status/{archived.data['id']}", "video")
-
-                    # Notify the user
-                    response = client.create_tweet(text=f"📖 — Esta mídia foi incluída no acervo sob a categoria '{category}'.", in_reply_to_tweet_id=status.id, quote_tweet_id=archived.data["id"])
-                    client.like(status.id)
-                    client.retweet(archived.data["id"])
-                    return
                 elif media.type == "photo":
                     # Retrieve the image
                     file = "cache/"+os.path.basename(media.url)
@@ -64,21 +59,25 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
                     with open(file, "wb") as f:
                         for chunk in req.iter_content(1024):
                             f.write(chunk)
+                    media_type = "photo"
+                    break
+                        
+            # Process the indexing
+            title = " ".join(title)
+            title = title.replace("—", "-")
+            category, *text = title.split(" - ") if " - " in title else ('Diverso/Não específico', title)
+            if not category or category in [" "]:
+                category = 'Diverso/Não específico'
+            title = f"{category} — {' '.join(text)}" if category != 'Diverso/Não específico' else " ".join(text)
 
+            # Upload the file and create the tweet 
+            media = api.media_upload(file)
+            archived = client.create_tweet(text=title, media_ids=[media.media_id_string], in_reply_to_tweet_id=config.get_image_id())
 
-                    # Process the indexing
-                    title = " ".join(title)
-                    category, *text = title.split(" — ") if " — " in title else ('Diverso/Não específico', title)  
+            # Update the database
+            database.add_media_entry(media.media_id_string, " ".join(text), category, f"https://twitter.com/arquivodojao/status/{archived.data['id']}", media_type)
 
-                    # Upload the file and create the tweet 
-                    media = api.media_upload(file)
-                    archived = client.create_tweet(text=title, media_ids=[media.media_id_string], in_reply_to_tweet_id=config.get_image_id())
-
-                    # Update the database
-                    database.add_media_entry(media.media_id_string, " ".join(text), category, f"https://twitter.com/arquivodojao/status/{archived.data['id']}", "photo")
-
-                    # Notify the user
-                    response = client.create_tweet(text=f"📖 — Esta mídia foi incluída no acervo sob a categoria '{category}'.", in_reply_to_tweet_id=status.id, quote_tweet_id=archived.data["id"])
-                    client.like(status.id)
-                    client.retweet(archived.data["id"])
-                    return
+            # Notify the user
+            response = client.create_tweet(text=f"📖 — Esta mídia foi incluída no acervo sob a categoria '{category}'.", in_reply_to_tweet_id=status.id, quote_tweet_id=archived.data["id"])
+            client.retweet(archived.data["id"])
+            return

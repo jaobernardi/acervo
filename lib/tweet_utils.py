@@ -1,11 +1,15 @@
+from unicodedata import decimal
 import requests
 import re
 import json
 from urllib.parse import urlparse
-from os import path
+from os import path, system
 from requests_toolbelt import user_agent
 import tqdm
 from . import database, auth, config
+import ffmpy
+import uuid
+import subprocess
 
 
 def add_video_from_id(id, title):
@@ -80,24 +84,26 @@ def get_video(tweet_id):
     bitrate = 0
     for vid in videos:
         if vid['content_type'] == 'video/mp4':
-                if vid['bitrate'] > bitrate:
+                if vid['bitrate'] >= bitrate:
                     bitrate = vid['bitrate']
                     hq_video_url = vid['url'] 
     return hq_video_url
 
 
+def save_video_as_gif_from_tweet(tweet_id, chunksize=1024):
+    filename = save_video_from_tweet(tweet_id)
+
+    system(f'ffmpeg -i {filename} {filename.removesuffix(".mp4")}.gif -loglevel quiet')
+
+    return filename.removesuffix(".mp4")+".gif"
+
 def save_video_from_tweet(tweet_id, chunksize=1024):
     tweet_id = str(tweet_id)
     url = get_video(tweet_id)
-    url_parsed = urlparse(url)
-    filename = path.basename(url_parsed.path)
     r = requests.get(url, stream=True)
-    iter = r.iter_content(chunksize)
-    with open(f"cache/{filename}", "wb") as file:
-        try:
-            while chunk := next(iter):
-                file.write(chunk)
-        except StopIteration:
-            return "cache/"+filename
-
+    filename = uuid.uuid4()
+    with open(f"cache/{filename}.mp4", "wb") as file:
+        for chunk in r.iter_content(chunksize):
+            file.write(chunk)
+    return f"cache/{filename}.mp4"
 

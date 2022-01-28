@@ -7,6 +7,9 @@ def get_id():
 def get_video_id():
     return get_data()["video_thread"]
 
+def get_admin():
+    return get_data()["admin"]
+
 def get_data():
     with open("config.json", "rb") as file:
         data = json.load(file)
