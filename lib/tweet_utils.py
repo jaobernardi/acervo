@@ -10,22 +10,7 @@ from . import database, auth, config
 import ffmpy
 import uuid
 import subprocess
-
-
-def add_video_from_id(id, title):
-    api = auth.get_api()
-    client = auth.get_client()
-
-    file = save_video_from_tweet(id)
-
-    category, *text = title.split(" — ") if " — " in title else ('Diverso/Não específico', title) 
-                        
-    media = api.media_upload(file)
-    archived = client.create_tweet(text=title, media_ids=[media.media_id_string], in_reply_to_tweet_id=config.get_video_id())
-
-    database.add_media_entry(media.media_id_string, " ".join(text), category, f"https://twitter.com/arquivodojao/status/{archived.data['id']}", "video")
-
-    client.retweet(archived.data["id"])
+import os
 
 
 def send_dms(recipients, *args, **kwargs):
@@ -35,15 +20,6 @@ def send_dms(recipients, *args, **kwargs):
         out.append(api.send_direct_message(id, *args, **kwargs))
     return out
 
-
-def rectify_video_entry(tweet_id):
-    client = auth.get_client()
-    tweet = client.get_tweet(tweet_id, expansions="attachments.media_keys", user_auth=True)
-    title = tweet.data.text
-    category, *text = title.split(" — ") if " — " in title else ('Diverso/Não específico', title)  
-    media = str(tweet.includes['media'][0].media_key.split("_")[1])
-
-    database.add_media_entry(media, " ".join(text).split("http")[0], category, f"https://twitter.com/arquivodojao/status/{tweet.data['id']}", "video")
 
 def send_request(session, url,method,headers):
     request = session.get(url, headers=headers) if method == "GET" else session.post(url, headers=headers)
@@ -104,6 +80,7 @@ def save_video_as_gif_from_tweet(tweet_id, chunksize=1024):
     system(f'ffmpeg -i {filename} {filename.removesuffix(".mp4")}.gif -loglevel quiet')
 
     return filename.removesuffix(".mp4")+".gif"
+
 
 def save_video_from_tweet(tweet_id, chunksize=1024):
     tweet_id = str(tweet_id)

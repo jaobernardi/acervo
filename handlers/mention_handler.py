@@ -59,12 +59,14 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
                 if media.type == "animated_gif":
                     file = tweet_utils.save_video_as_gif_from_tweet(status.in_reply_to_status_id)
                     media_type = "gif"
+                    thread = config.get_image_id()
                     break
 
                 elif media.type == "video":
                     # Retrieve the video
                     file = tweet_utils.save_video_from_tweet(status.in_reply_to_status_id)
                     media_type = "video"
+                    thread = config.get_video_id()
                     break
 
                 elif media.type == "photo":
@@ -76,6 +78,7 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
                         for chunk in req.iter_content(1024):
                             f.write(chunk)
                     media_type = "photo"
+                    thread = config.get_image_id()
                     break
                         
             # Process the indexing
@@ -88,7 +91,7 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
 
             # Upload the file and create the tweet 
             media = api.media_upload(file)
-            archived = client.create_tweet(text=title, media_ids=[media.media_id_string], in_reply_to_tweet_id=config.get_image_id())
+            archived = client.create_tweet(text=title, media_ids=[media.media_id_string])
 
             # Update the database
             database.add_media_entry(media.media_id_string, " ".join(text), category, f"https://twitter.com/arquivodojao/status/{archived.data['id']}", media_type)
