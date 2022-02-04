@@ -7,8 +7,8 @@ def setup_tables():
     cur = con.cursor()
 
     cur.execute("CREATE TABLE `status_mention` (`id` INT(32), `text` MEDIUMTEXT, `link` TEXT, `time` DATETIME);")
-    cur.execute("CREATE TABLE `add_queue` (`uuid` TEXT(36), `tweet_id` INT(32), `text` MEDIUMTEXT, `link` TEXT, `time` DATETIME);")
-    cur.execute("CREATE TABLE `media_index` (`uuid` TEXT(36), `media_id` MEDIUMTEXT, `text` MEDIUMTEXT, `link` TEXT, `time` DATETIME, `category` TEXT, `media_type` TEXT);")
+    cur.execute("CREATE TABLE `add_queue` (`uuid` TEXT(36), `tweet_id` INT(32), `text` MEDIUMTEXT, `link` TEXT, `time` DATETIME, user TEXT);")
+    cur.execute("CREATE TABLE `media_index` (`uuid` TEXT(36), `media_id` MEDIUMTEXT, `text` MEDIUMTEXT, `link` TEXT, `time` DATETIME, `category` TEXT, `type` TEXT);")
     con.commit()
     con.close()
 
@@ -29,11 +29,11 @@ def add_mention_entry(id, text, link):
     con.close()
 
 
-def add_inclusion_entry(tweet_id, text, link):
+def add_inclusion_entry(tweet_id, text, link, user):
     con = sqlite3.connect("database.sql")
     cur = con.cursor()
     id = str(uuid.uuid4())
-    cur.execute("INSERT INTO `add_queue`(`uuid`, `tweet_id`, `text`, `link`, `time`) VALUES (?, ?, ?, ?, ?)", (id, tweet_id, text, link, datetime.now()))
+    cur.execute("INSERT INTO `add_queue`(`uuid`, `tweet_id`, `text`, `link`, `time`, `user`) VALUES (?, ?, ?, ?, ?, ?)", (id, tweet_id, text, link, datetime.now(), user))
     con.commit()
     con.close()
     return id
@@ -54,7 +54,31 @@ def add_media_entry(media_id, text, category, link, type):
     cur.execute("INSERT INTO `media_index`(`uuid`, `media_id`, `text`, `link`, `time`, `category`, `type`) VALUES (?, ?, ?, ?, ?, ?, ?)", (id, media_id, text, link, datetime.now(), category, type))
     con.commit()
     con.close()
-    
+
+
+def get_inclusion_entries(uuid=None):
+    con = sqlite3.connect("database.sql")
+    cur = con.cursor()
+    output = []
+    if not uuid:
+        for result in cur.execute("SELECT * FROM `add_queue` WHERE 1=1"):
+            output.append(result)
+    else:
+        for result in cur.execute("SELECT * FROM `add_queue` WHERE `uuid`=?", (uuid,)):
+            con.close()
+            return result
+    con.close()
+    return output
+
+
+def remove_inclusion_entries(uuid):
+    con = sqlite3.connect("database.sql")
+    cur = con.cursor()
+    cur.execute("DELETE FROM `add_queue` WHERE `uuid`=?", (uuid,))
+    con.commit()
+    con.close()
+
+
 
 def remove_video(uuid):
     con = sqlite3.connect("database.sql")
