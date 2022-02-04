@@ -1,0 +1,4 @@
+pyding
+tweepy
+ffmpeg
+pillow
