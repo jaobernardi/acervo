@@ -14,6 +14,8 @@ import os
 
 
 def send_dms(recipients, *args, **kwargs):
+    if not isinstance(recipients, list):
+        recipients = [recipients]
     api = auth.get_api()
     out = []
     for id in recipients:
