@@ -1,16 +1,10 @@
-from unicodedata import decimal
 import requests
 import re
 import json
-from urllib.parse import urlparse
 from os import path, system
-from requests_toolbelt import user_agent
-import tqdm
-from . import database, auth, config
-import ffmpy
+from . import auth
 import uuid
-import subprocess
-import os
+
 
 
 def send_dms(recipients, *args, **kwargs):

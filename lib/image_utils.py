@@ -1,4 +1,3 @@
-from statistics import quantiles
 from PIL import Image
 import uuid
 

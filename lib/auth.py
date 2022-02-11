@@ -1,4 +1,4 @@
-from . import config, database
+from . import config
 import logging
 import tweepy
 
