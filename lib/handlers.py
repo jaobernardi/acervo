@@ -1,5 +1,4 @@
 import os
-from tqdm import tqdm
 import importlib
 
 
@@ -13,5 +12,5 @@ def load_handlers():
             loaded_handlers.append(handle)
 
 def reload_handlers():
-    for handle in tqdm(loaded_handlers, desc="Reloading handlers"):
+    for handle in loaded_handlers:
         importlib.reload(handle)
