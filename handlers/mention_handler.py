@@ -1,10 +1,8 @@
 from nis import cat
 from attr import has
 import pyding
-from requests_toolbelt import user_agent
 from lib import tweet_utils, config, database
 import tweepy
-import logging
 import os
 import requests
 
