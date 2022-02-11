@@ -48,7 +48,7 @@ def add_media(tweet_id, title):
             media_type = "photo"
             thread = config.get_image_id()
             break
-                
+
     # Process the indexing
     category, text, title = parse_title(title)           
 
@@ -83,4 +83,3 @@ def parse_title(title):
     if not category or category in [" "]:
         category = 'Diverso/Não específico'
     return category, " ".join(text), f"{category} — {' '.join(text)}" if category != 'Diverso/Não específico' else " ".join(text)
-    

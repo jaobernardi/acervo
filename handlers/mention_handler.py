@@ -50,12 +50,7 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
                     media_list.append(api.media_upload(low_poly).media_id_string)
             if media_list:
                 client.create_tweet(text=f"🔮 — Imagem destruída com sucesso", media_ids=media_list, in_reply_to_tweet_id=status.id)
-                    
-
-
-
-        
-        
+                           
         case ["adicionar", *title]:
             # Check if author is an admin (placeholder solution)
             if status.user.id not in config.get_admin():
@@ -130,3 +125,4 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
             response = client.create_tweet(text=f"📖 — Esta mídia foi incluída no acervo sob a categoria '{category}'.", in_reply_to_tweet_id=status.id, quote_tweet_id=archived.data["id"])
             client.retweet(archived.data["id"])
             return
+    
