@@ -94,8 +94,12 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
 
                 elif media.type == "video":
                     # Retrieve the video
-                    file = tweet_utils.save_video_from_tweet(status.in_reply_to_status_id)
-                    media_type = "video"                    
+                    if "to_gif" in flags:
+                        file = tweet_utils.save_video_as_gif_from_tweet(status.in_reply_to_status_id)
+                        media_type = "gif"  
+                    else:
+                        file = tweet_utils.save_video_from_tweet(status.in_reply_to_status_id)
+                        media_type = "video"                    
 
                 elif media.type == "photo":
                     # Retrieve the image
@@ -110,7 +114,7 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
                     break
                 media_list.append(api.media_upload(file).media_id_string)
             # Process the indexing
-            category, text, title = parse_title(title)           
+            category, text, title, flags = parse_title(title)           
 
             # Upload the file and create the tweet 
             
