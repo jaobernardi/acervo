@@ -1,6 +1,6 @@
 from PIL import Image
 import uuid
-
+from os import system
 from lib.utils import calc_percentage
 
 
