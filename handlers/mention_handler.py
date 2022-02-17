@@ -86,6 +86,8 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
             # Signal acknowledgement
             client.like(status.id)
             media_list = []
+            # Process the indexing
+            category, text, title, flags = parse_title(title)  
             # Retrieve media
             for media in tweet.includes["media"]:
                 if media.type == "animated_gif":
@@ -113,8 +115,7 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
                 else:
                     break
                 media_list.append(api.media_upload(file).media_id_string)
-            # Process the indexing
-            category, text, title, flags = parse_title(title)           
+        
 
             # Upload the file and create the tweet 
             

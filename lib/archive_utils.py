@@ -82,11 +82,13 @@ def parse_title(title):
     category, *text = title.split(" - ") if " - " in title else ('Diverso/Não específico', title)
     if not category or category in [" "]:
         category = 'Diverso/Não específico'
+    text = " ".join(text)
     flags = []
-    for word in text:
+    for word in text.split(" "):
+        print(word)
         match word:
             case "-to_gif":
                 flags.append("to_gif")
     for flag in flags:
-        text = text.replace("-"+flag, "")
-    return category, " ".join(text), f"{category} — {' '.join(text)}" if category != 'Diverso/Não específico' else " ".join(text), flags
+        text = text.replace(" -"+flag, "")
+    return category, text, f"{category} — {' '.join(text)}" if category != 'Diverso/Não específico' else text, flags
