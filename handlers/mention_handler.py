@@ -7,7 +7,7 @@ import os
 import requests
 
 from lib.archive_utils import parse_title
-from lib.image_utils import lower_image_quality
+from lib.media_utils import lower_image_quality
 
 @pyding.on("mention")
 def mention(event, status, client: tweepy.Client, api: tweepy.API):
