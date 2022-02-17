@@ -91,4 +91,4 @@ def parse_title(title):
                 flags.append("to_gif")
     for flag in flags:
         text = text.replace(" -"+flag, "")
-    return category, text, f"{category} — {' '.join(text)}" if category != 'Diverso/Não específico' else text, flags
+    return category, text, f"{category} — {text}" if category != 'Diverso/Não específico' else text, flags
