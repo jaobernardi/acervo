@@ -36,6 +36,9 @@
 - [ ] Filtro de duplicidade de conteúdo.
 - [x] Logging
 - [ ] Auto-deploy
+- [x] Sistema de flags
+- [ ] Detecção de trends 
+- [ ] Sistema de tracking de conteúdo
 
 <br>
 <br>
