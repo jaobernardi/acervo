@@ -37,5 +37,5 @@
 - [ ] Auto-deploy
 
 <p align="center">
-Feito com ❤️ por <a href="https://twitter.com/jaobernard">João Bernardi</a>
+Feito por <a href="https://twitter.com/jaobernard">João Bernardi</a> com ❤️
 </p>
