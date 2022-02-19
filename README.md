@@ -24,6 +24,7 @@
 - Como funciona?
 > A utilização deste acervo é simples. Basta marcar o acervo juntamente com a palavra *adicionar* em seguida para que seu meme seja incluído. Assim que incluido, o meme será analizado pela moderação e então arquivado.
 
+<br>
 
 ### ⚙️ Funções e Planejamento
 - [ ] API integrada com *api.jaobernardi.space*
@@ -36,6 +37,9 @@
 - [x] Logging
 - [ ] Auto-deploy
 
+<br>
+<br>
+<hr>
 <p align="center">
 Feito por <a href="https://twitter.com/jaobernard">João Bernardi</a> com ❤️
 </p>
