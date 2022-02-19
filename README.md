@@ -1,5 +1,5 @@
 ![Arquivo do Jão](assets/arquivo_do_jão_bg.png)
-<h1 align="center">Arquivo do Jão</h1>
+<hr>
 <p align="center">Acervo de memes simples, automático e eficiente.</p>
 <p align="center">
     <a href="https://twitter.com/intent/follow?screen_name=arquivodojao">
