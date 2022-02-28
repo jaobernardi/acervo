@@ -67,7 +67,8 @@ def add_media(tweet_id, title):
 def accept_inclusion_entry(uuid, title_replace=None):
     uuid, tweet_id, text, url, date, user = database.get_inclusion_entries(uuid)
     text = text.removeprefix("adicionar ") if not title_replace else title_replace
-    tweet = add_media(tweet_id, text)
+    reply = auth.get_api().get_status(tweet_id).in_reply_to_status_id
+    tweet = add_media(reply, text)
     try:
         tweet_utils.send_dms([user,], text=f"✅ — Sua solicitação de inclusão de mídia no acervo foi aceita pela moderação.\n\nhttps://twitter.com/arquivodojao/status/{tweet.data['id']}")        
     except:
