@@ -1,9 +1,10 @@
 import sqlite3
 from datetime import datetime
+from . import config
 import uuid
 
 def setup_tables():
-    con = sqlite3.connect("database.sql")
+    con = sqlite3.connect(config.get_database())
     cur = con.cursor()
 
     cur.execute("CREATE TABLE `status_mention` (`id` INT(32), `text` MEDIUMTEXT, `link` TEXT, `time` DATETIME);")
@@ -14,7 +15,7 @@ def setup_tables():
 
 
 def arbitrary_query(query):
-    con = sqlite3.connect("database.sql")
+    con = sqlite3.connect(config.get_database())
     cur = con.cursor()
     cur.execute(query)
     con.commit()
@@ -22,7 +23,7 @@ def arbitrary_query(query):
 
 
 def add_mention_entry(id, text, link):
-    con = sqlite3.connect("database.sql")
+    con = sqlite3.connect(config.get_database())
     cur = con.cursor()
     cur.execute("INSERT INTO `status_mention`(`id`, `text`, `link`, `time`) VALUES (?, ?, ?, ?)", (id, text, link, datetime.now()))
     con.commit()
@@ -30,7 +31,7 @@ def add_mention_entry(id, text, link):
 
 
 def add_inclusion_entry(tweet_id, text, link, user):
-    con = sqlite3.connect("database.sql")
+    con = sqlite3.connect(config.get_database())
     cur = con.cursor()
     id = str(uuid.uuid4())
     cur.execute("INSERT INTO `add_queue`(`uuid`, `tweet_id`, `text`, `link`, `time`, `user`) VALUES (?, ?, ?, ?, ?, ?)", (id, tweet_id, text, link, datetime.now(), user))
@@ -40,7 +41,7 @@ def add_inclusion_entry(tweet_id, text, link, user):
 
 
 def clear_video_entries():
-    con = sqlite3.connect("database.sql")
+    con = sqlite3.connect(config.get_database())
     cur = con.cursor()
     cur.execute("DELETE FROM `media_index` WHERE 1=1")
     con.commit()
@@ -49,7 +50,7 @@ def clear_video_entries():
 
 def add_media_entry(media_id, text, category, link, type):
     id = str(uuid.uuid4())
-    con = sqlite3.connect("database.sql")
+    con = sqlite3.connect(config.get_database())
     cur = con.cursor()
     cur.execute("INSERT INTO `media_index`(`uuid`, `media_id`, `text`, `link`, `time`, `category`, `type`) VALUES (?, ?, ?, ?, ?, ?, ?)", (id, media_id, text, link, datetime.now(), category, type))
     con.commit()
@@ -57,7 +58,7 @@ def add_media_entry(media_id, text, category, link, type):
 
 
 def get_inclusion_entries(uuid=None):
-    con = sqlite3.connect("database.sql")
+    con = sqlite3.connect(config.get_database())
     cur = con.cursor()
     output = []
     if not uuid:
@@ -72,7 +73,7 @@ def get_inclusion_entries(uuid=None):
 
 
 def remove_inclusion_entries(uuid):
-    con = sqlite3.connect("database.sql")
+    con = sqlite3.connect(config.get_database())
     cur = con.cursor()
     cur.execute("DELETE FROM `add_queue` WHERE `uuid`=?", (uuid,))
     con.commit()
@@ -81,7 +82,7 @@ def remove_inclusion_entries(uuid):
 
 
 def remove_video(uuid):
-    con = sqlite3.connect("database.sql")
+    con = sqlite3.connect(config.get_database())
     cur = con.cursor()
     cur.execute("DELETE FROM `media_index` WHERE `uuid`=?", (uuid,))
     con.commit()
@@ -89,7 +90,7 @@ def remove_video(uuid):
 
 
 def get_videos(category=None):
-    con = sqlite3.connect("database.sql")
+    con = sqlite3.connect(config.get_database())
     cur = con.cursor()
     output = []
     if not category:
@@ -103,7 +104,7 @@ def get_videos(category=None):
 
 
 def get_photos(category=None):
-    con = sqlite3.connect("database.sql")
+    con = sqlite3.connect(config.get_database())
     cur = con.cursor()
     output = []
     if not category:
@@ -117,7 +118,7 @@ def get_photos(category=None):
 
 
 def get_media(category=None):
-    con = sqlite3.connect("database.sql")
+    con = sqlite3.connect(config.get_database())
     cur = con.cursor()
     output = []
     if not category:
@@ -132,7 +133,7 @@ def get_media(category=None):
 
 
 def get_mentions():
-    con = sqlite3.connect("database.sql")
+    con = sqlite3.connect(config.get_database())
     cur = con.cursor()
     output = []
     for result in cur.execute("SELECT * FROM `status_mention` WHERE 1=1"):

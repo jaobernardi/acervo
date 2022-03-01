@@ -6,5 +6,6 @@
     "access_token_secret": "",
     "video_thread": "",
     "image_thread": "",
-    "admin": []
+    "admin": [],
+    "database": "database.sql"
 }

@@ -15,6 +15,9 @@ def get_data():
         data = json.load(file)
     return data
 
+def get_database():
+    return get_data()["database"]
+
 def get_bearer():
     return get_data()["bearer_token"]
 
