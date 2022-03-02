@@ -1,8 +1,7 @@
-from pickle import NONE
 import sqlite3
 from datetime import datetime
 
-from itsdangerous import json
+import json
 from . import config
 import uuid
 
@@ -97,8 +96,8 @@ def get_user(user_uuid=None):
         if not user_uuid:
              user = [i for i in cursor.execute("SELECT * FROM Users WHERE 1=1")]
         else:
-            user = [i for i in cursor.execute("SELECT * FROM Users WHERE UserUUID=?", (user_uuid,))][0]
-    return user
+            user = [i for i in cursor.execute("SELECT * FROM Users WHERE UserUUID=?", (user_uuid,))]
+    return user[0] if len(user) == 1 else user
 
 
 def delete_user(user_uuid):
@@ -110,7 +109,7 @@ def delete_user(user_uuid):
 def add_tweet(tweet_id, tweet_text, tweet_meta, tweet_media, user_uuid=None, user_id=None):
     if not user_id and not user_uuid:
         return    
-    user_uuid = add_user(user_id) if not user_uuid else user_uuid
+    user_uuid = add_user(user_id) if user_id else user_uuid
     tweet_uuid = str(uuid.uuid3(uuid.NAMESPACE_URL, str(tweet_id)))
 
     with DatabaseConnection() as cursor:
@@ -149,9 +148,9 @@ def delete_tweet(tweet_uuid=None, user_uuid=None):
 
 # Media manipulation methods
 def add_media(media_id, media_category, media_description, user_id=None, tweet_id=None, user_uuid=None, tweet_uuid=None):
-    if (not user_id and not user_uuid) or not tweet_uuid:
+    if (not user_id and not user_uuid) or (not tweet_uuid and not tweet_id):
         return
-    user_uuid = add_user(user_id) if not user_uuid else user_uuid
+    user_uuid = add_user(user_id) if user_id else user_uuid
     media_uuid = str(uuid.uuid4())
 
     with DatabaseConnection() as cursor:
@@ -192,7 +191,7 @@ def add_request(user_id=None, user_uuid=None, tweet_uuid=None):
     if (not user_id and not user_uuid) or not tweet_uuid:
         return
 
-    user_uuid = add_user(user_id) if not user_uuid else user_uuid
+    user_uuid = add_user(user_id) if user_id else user_uuid
     request_uuid = str(uuid.uuid4())
 
     with DatabaseConnection() as cursor:
@@ -202,8 +201,40 @@ def add_request(user_id=None, user_uuid=None, tweet_uuid=None):
 
     return request_uuid
 
-def get_request():
+
+def get_request(request_uuid=None, user_uuid=None, user_id=None, tweet_id=None, tweet_uuid=None):
+    if (not user_id and not user_uuid) and (not tweet_uuid and not tweet_id) and not request_uuid:
+        return
+
+    user_uuid = add_user(user_id) if user_id else user_uuid
+    tweet_uuid = str(uuid.uuid3(uuid.NAMESPACE_URL, str(tweet_id))) if tweet_id else None
+    print(request_uuid, user_uuid, tweet_uuid, tweet_id, user_id)
+    output = []
     with DatabaseConnection() as cursor:
         cursor.execute(
-        "INSERT INTO RequestQueue(RequestUUID, TweetUUID, UserUUID) VALUES (?, ?, ?)",
+        """SELECT
+            r.RequestUUID,
+            u.UserID,
+            t.*
+        FROM RequestQueue AS r
+        INNER JOIN Tweets AS t
+            ON t.TweetUUID = r.TweetUUID
+        INNER JOIN Users as u
+            ON u.UserUUID = r.UserUUID
+        WHERE RequestUUID=? OR r.UserUUID=? or r.TweetUUID=?""",
+        (request_uuid, user_uuid, tweet_uuid))
+        output = [i for i in cursor]
+    return output
+
+
+def remove_request(request_uuid=None, user_uuid=None, user_id=None, tweet_id=None, tweet_uuid=None):
+    if (not user_id and not user_uuid) or (not tweet_uuid and not tweet_id) or not request_uuid:
+        return
+    
+    user_uuid = add_user(user_id) if not user_uuid else user_uuid
+    tweet_uuid = str(uuid.uuid3(uuid.NAMESPACE_URL, str(tweet_id))) if not tweet_id else None
+
+    with DatabaseConnection() as cursor:
+        cursor.execute(
+        "DELETE FROM RequestQueue WHERE RequestUUID=? OR TweetUUID=? OR UserUUID=?",
         (request_uuid, tweet_uuid, user_uuid))
