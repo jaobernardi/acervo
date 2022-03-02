@@ -42,17 +42,6 @@ def setup_tables():
     )
     """
 
-    statistics = """
-    CREATE TABLE Statistics (
-        `UserUUID` TEXT(36),
-        `TweetUUID` TEXT(36),
-        `MediaUUID` TEXT(36),
-        FOREIGN KEY(UserUUID) REFERENCES Users(UserUUID),
-        FOREIGN KEY(TweetUUID) REFERENCES Tweets(TweetUUID),
-        FOREIGN KEY(MediaUUID) REFERENCES Media(MediaUUID)
-    )
-    """
-
     inclusion_queue = """
     CREATE TABLE RequestQueue (
         `RequestUUID` TEXT(36),
@@ -66,7 +55,6 @@ def setup_tables():
     cur.execute(users)
     cur.execute(tweets)
     cur.execute(media)
-    cur.execute(statistics)
     cur.execute(inclusion_queue)
 
     con.commit()
