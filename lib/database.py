@@ -1,5 +1,8 @@
+from pickle import NONE
 import sqlite3
 from datetime import datetime
+
+from itsdangerous import json
 from . import config
 import uuid
 
@@ -7,136 +10,200 @@ def setup_tables():
     con = sqlite3.connect(config.get_database())
     cur = con.cursor()
 
-    cur.execute("CREATE TABLE `status_mention` (`id` INT(32), `text` MEDIUMTEXT, `link` TEXT, `time` DATETIME);")
-    cur.execute("CREATE TABLE `add_queue` (`uuid` TEXT(36), `tweet_id` INT(32), `text` MEDIUMTEXT, `link` TEXT, `time` DATETIME, user TEXT);")
-    cur.execute("CREATE TABLE `media_index` (`uuid` TEXT(36), `media_id` MEDIUMTEXT, `text` MEDIUMTEXT, `link` TEXT, `time` DATETIME, `category` TEXT, `type` TEXT);")
+    users = """
+    CREATE TABLE Users (
+        `UserID` INT(36),
+        `UserUUID` TEXT(36)
+    )
+    """
+
+    tweets = """
+    CREATE TABLE Tweets (
+        `TweetID` INT(36),
+        `TweetUUID` TEXT(36),
+        `UserUUID` TEXT(36),
+        `TweetText` TEXT(290),
+        `TweetMeta` MEDIUMTEXT,
+        `TweetMedia` TEXT(128),
+        `Timestamp` DATETIME,
+        FOREIGN KEY(UserUUID) REFERENCES Users(UserUUID)
+    )
+    """
+
+    media = """
+    CREATE TABLE Media (
+        `MediaUUID` TEXT(36),
+        `MediaID` INT(36),        
+        `UserUUID` TEXT(36),
+        `TweetUUID` TEXT(36),
+        `MediaCategory` TEXT,
+        `MediaDescription` TEXT,
+        FOREIGN KEY(UserUUID) REFERENCES Users(UserUUID),
+        FOREIGN KEY(TweetUUID) REFERENCES Tweets(TweetUUID)
+    )
+    """
+
+    statistics = """
+    CREATE TABLE Statistics (
+        `UserUUID` TEXT(36),
+        `TweetUUID` TEXT(36),
+        `MediaUUID` TEXT(36),
+        FOREIGN KEY(UserUUID) REFERENCES Users(UserUUID),
+        FOREIGN KEY(TweetUUID) REFERENCES Tweets(TweetUUID),
+        FOREIGN KEY(MediaUUID) REFERENCES Media(MediaUUID)
+    )
+    """
+
+    inclusion_queue = """
+    CREATE TABLE RequestQueue (
+        `RequestUUID` TEXT(36),
+        `TweetUUID` TEXT(36),
+        `UserUUID` TEXT(36),
+        FOREIGN KEY(UserUUID) REFERENCES Users(UserUUID),
+        FOREIGN KEY(TweetUUID) REFERENCES Tweets(TweetUUID)
+    )
+    """
+
+    cur.execute(users)
+    cur.execute(tweets)
+    cur.execute(media)
+    cur.execute(statistics)
+    cur.execute(inclusion_queue)
+
     con.commit()
     con.close()
 
-
-def arbitrary_query(query):
-    con = sqlite3.connect(config.get_database())
-    cur = con.cursor()
-    cur.execute(query)
-    con.commit()
-    con.close()
-
-
-def add_mention_entry(id, text, link):
-    con = sqlite3.connect(config.get_database())
-    cur = con.cursor()
-    cur.execute("INSERT INTO `status_mention`(`id`, `text`, `link`, `time`) VALUES (?, ?, ?, ?)", (id, text, link, datetime.now()))
-    con.commit()
-    con.close()
+class DatabaseConnection(object):
+    def __enter__(self):
+        self.connection = sqlite3.connect(config.get_database())
+        return self.connection.cursor()
+    
+    def __exit__(self, *args):
+        self.connection.commit()
+        self.connection.close()
 
 
-def add_inclusion_entry(tweet_id, text, link, user):
-    con = sqlite3.connect(config.get_database())
-    cur = con.cursor()
-    id = str(uuid.uuid4())
-    cur.execute("INSERT INTO `add_queue`(`uuid`, `tweet_id`, `text`, `link`, `time`, `user`) VALUES (?, ?, ?, ?, ?, ?)", (id, tweet_id, text, link, datetime.now(), user))
-    con.commit()
-    con.close()
-    return id
+# User manipulation methods
+def add_user(user_id):
+    user_uuid = str(uuid.uuid3(uuid.NAMESPACE_URL, str(user_id)))
+    with DatabaseConnection() as cursor:
+        if not get_user(user_uuid):
+            cursor.execute("INSERT INTO Users(UserID, UserUUID) VALUES (?, ?)", (user_id, user_uuid))
+    return user_uuid
 
 
-def clear_video_entries():
-    con = sqlite3.connect(config.get_database())
-    cur = con.cursor()
-    cur.execute("DELETE FROM `media_index` WHERE 1=1")
-    con.commit()
-    con.close()
+def get_user(user_uuid=None):
+    with DatabaseConnection() as cursor:
+        if not user_uuid:
+             user = [i for i in cursor.execute("SELECT * FROM Users WHERE 1=1")]
+        else:
+            user = [i for i in cursor.execute("SELECT * FROM Users WHERE UserUUID=?", (user_uuid,))][0]
+    return user
 
 
-def add_media_entry(media_id, text, category, link, type):
-    id = str(uuid.uuid4())
-    con = sqlite3.connect(config.get_database())
-    cur = con.cursor()
-    cur.execute("INSERT INTO `media_index`(`uuid`, `media_id`, `text`, `link`, `time`, `category`, `type`) VALUES (?, ?, ?, ?, ?, ?, ?)", (id, media_id, text, link, datetime.now(), category, type))
-    con.commit()
-    con.close()
+def delete_user(user_uuid):
+    with DatabaseConnection() as cursor:
+        cursor.execute("DELETE FROM Users WHERE UserUUID=?", (user_uuid,))
 
 
-def get_inclusion_entries(uuid=None):
-    con = sqlite3.connect(config.get_database())
-    cur = con.cursor()
-    output = []
-    if not uuid:
-        for result in cur.execute("SELECT * FROM `add_queue` WHERE 1=1"):
-            output.append(result)
-    else:
-        for result in cur.execute("SELECT * FROM `add_queue` WHERE `uuid`=?", (uuid,)):
-            con.close()
-            return result
-    con.close()
-    return output
+# Tweet manipulation methods
+def add_tweet(tweet_id, tweet_text, tweet_meta, tweet_media, user_uuid=None, user_id=None):
+    if not user_id and not user_uuid:
+        return    
+    user_uuid = add_user(user_id) if not user_uuid else user_uuid
+    tweet_uuid = str(uuid.uuid3(uuid.NAMESPACE_URL, str(tweet_id)))
+
+    with DatabaseConnection() as cursor:
+        if not get_tweet(tweet_uuid):
+            cursor.execute(
+                "INSERT INTO Tweets(TweetID, TweetUUID, UserUUID, TweetText, TweetMeta, TweetMedia, Timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    tweet_id,
+                    tweet_uuid,
+                    user_uuid,
+                    tweet_text,
+                    json.dumps(tweet_meta),
+                    json.dumps(tweet_media),
+                    datetime.now()
+                )
+            )
+    return tweet_uuid
 
 
-def remove_inclusion_entries(uuid):
-    con = sqlite3.connect(config.get_database())
-    cur = con.cursor()
-    cur.execute("DELETE FROM `add_queue` WHERE `uuid`=?", (uuid,))
-    con.commit()
-    con.close()
+def get_tweet(tweet_uuid=None, user_uuid=None):
+    with DatabaseConnection() as cursor:
+        if not tweet_uuid and not user_uuid:
+            tweets = [i for i in cursor.execute("SELECT * FROM Tweets WHERE 1=1")]
+        else:
+            tweets = [i for i in cursor.execute("SELECT * FROM Tweets WHERE UserUUID=? OR TweetUUID=?", (user_uuid, tweet_uuid))] 
+    return tweets
 
 
+def delete_tweet(tweet_uuid=None, user_uuid=None):
+    if not tweet_uuid and not user_uuid:
+        return
 
-def remove_video(uuid):
-    con = sqlite3.connect(config.get_database())
-    cur = con.cursor()
-    cur.execute("DELETE FROM `media_index` WHERE `uuid`=?", (uuid,))
-    con.commit()
-    con.close()
-
-
-def get_videos(category=None):
-    con = sqlite3.connect(config.get_database())
-    cur = con.cursor()
-    output = []
-    if not category:
-        for result in cur.execute("SELECT * FROM `media_index` WHERE `type`='video'"):
-            output.append(result)
-    else:
-        for result in cur.execute("SELECT * FROM `media_index` WHERE `type`='video', `category`=?", (category,)):
-            output.append(result)
-    con.close()
-    return output
+    with DatabaseConnection() as cursor:
+        cursor.execute("DELETE FROM Tweets WHERE UserUUID=? OR TweetUUID=?", (user_uuid, tweet_uuid))
 
 
-def get_photos(category=None):
-    con = sqlite3.connect(config.get_database())
-    cur = con.cursor()
-    output = []
-    if not category:
-        for result in cur.execute("SELECT * FROM `media_index` WHERE `type`='photo'"):
-            output.append(result)
-    else:
-        for result in cur.execute("SELECT * FROM `media_index` WHERE `type`='photo', `category`=?", (category,)):
-            output.append(result)
-    con.close()
-    return output
+# Media manipulation methods
+def add_media(media_id, media_category, media_description, user_id=None, tweet_id=None, user_uuid=None, tweet_uuid=None):
+    if (not user_id and not user_uuid) or not tweet_uuid:
+        return
+    user_uuid = add_user(user_id) if not user_uuid else user_uuid
+    media_uuid = str(uuid.uuid4())
+
+    with DatabaseConnection() as cursor:
+        if not get_media(tweet_uuid=tweet_id):
+            cursor.execute(
+                "INSERT INTO Media(MediaUUID, MediaID, UserUUID, TweetUUID, MediaCategory, MediaDescription) VALUES (?, ?, ?, ?, ?, ?)",
+                (media_uuid, json.dumps(media_id), user_uuid, tweet_uuid, media_category, media_description))
+    return media_uuid
+
+def get_media(user_uuid=None, media_uuid=None, media_category=None, tweet_uuid=None):
+    with DatabaseConnection() as cursor:
+        media = [i for i in cursor.execute("""
+        SELECT 
+            MediaUUID,
+            MediaID,
+            MediaDescription,
+            MediaCategory,
+            u.*,
+            t.*
+
+        FROM Media AS m
+        INNER JOIN Users AS u
+            ON u.UserUUID = m.UserUUID
+        INNER JOIN Tweets AS t
+            ON t.TweetUUID = m.TweetUUID
+
+        WHERE m.UserUUID=? OR m.MediaUUID=? OR m.MediaCategory=? OR m.TweetUUID=?""",
+         (user_uuid, media_uuid, media_category, tweet_uuid))]
+    return media
 
 
-def get_media(category=None):
-    con = sqlite3.connect(config.get_database())
-    cur = con.cursor()
-    output = []
-    if not category:
-        for result in cur.execute("SELECT * FROM `media_index` WHERE 1=1"):
-            output.append(result)
-    else:
-        for result in cur.execute("SELECT * FROM `media_index` WHERE `category`=?", (category,)):
-            output.append(result)
-    con.close()
-    return output
+def delete_media(media_uuid=None, tweet_uuid=None, user_uuid=None):
+    with DatabaseConnection() as cursor:
+        cursor.execute("DELETE FROM Users WHERE UserUUID=? OR TweetUUID=? OR MediaUUID=?", (user_uuid,))
 
+# Inclusion Queue manipulation methods
+def add_request(user_id=None, user_uuid=None, tweet_uuid=None):
+    if (not user_id and not user_uuid) or not tweet_uuid:
+        return
 
+    user_uuid = add_user(user_id) if not user_uuid else user_uuid
+    request_uuid = str(uuid.uuid4())
 
-def get_mentions():
-    con = sqlite3.connect(config.get_database())
-    cur = con.cursor()
-    output = []
-    for result in cur.execute("SELECT * FROM `status_mention` WHERE 1=1"):
-        output.append(result)
-    con.close()
-    return output
+    with DatabaseConnection() as cursor:
+        cursor.execute(
+        "INSERT INTO RequestQueue(RequestUUID, TweetUUID, UserUUID) VALUES (?, ?, ?)",
+        (request_uuid, tweet_uuid, user_uuid))
+
+    return request_uuid
+
+def get_request():
+    with DatabaseConnection() as cursor:
+        cursor.execute(
+        "INSERT INTO RequestQueue(RequestUUID, TweetUUID, UserUUID) VALUES (?, ?, ?)",
+        (request_uuid, tweet_uuid, user_uuid))
