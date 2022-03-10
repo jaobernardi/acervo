@@ -1,6 +1,9 @@
 import json
 
 
+def get_stream_url():
+    return get_data()['stream_url']
+
 def get_id():
     return get_data()["user_id"]
 
