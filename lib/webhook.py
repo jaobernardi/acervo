@@ -21,4 +21,4 @@ def fetch_data():
 
 @pyding.on("webhook_event")
 def webhook(event, data):
-    
+    return
