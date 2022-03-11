@@ -5,15 +5,15 @@ import os
 
 def rectify_video_entry(tweet_id):
     client = auth.get_client()
-    tweet = client.get_tweet(tweet_id, expansions="attachments.media_keys", user_auth=True)
+    tweet = client.get_tweet(tweet_id, expansions="attachments.media_keys,author_id", user_auth=True)
     title = tweet.data.text
     category, *text = title.split(" — ") if " — " in title else ('Diverso/Não específico', title)  
-    media = str(tweet.includes['media'][0].media_key.split("_")[1])
+    media = tweet.includes['media'][0].media_key.split("_")[1]
 
-    database.add_media_entry(media, " ".join(text).split("http")[0], category, f"https://twitter.com/arquivodojao/status/{tweet.data['id']}", "video")
+    database.add_media([media], category, text, tweet.includes['users'][0].id, tweet_id)
 
 
-def add_media(tweet_id, title):
+def add_media(tweet_id, user_id, original_tweet, title):
     client = auth.get_client()
     api = auth.get_api()
     tweet = client.get_tweet(tweet_id, user_auth=True, expansions="attachments.media_keys", media_fields="url")
@@ -21,21 +21,21 @@ def add_media(tweet_id, title):
     # Check if there is any media in the tweet
     if "media" not in tweet.includes:
         return
-    
+    media_list = []
     # Retrieve media
     for media in tweet.includes["media"]:
         if media.type == "animated_gif":
             file = tweet_utils.save_video_as_gif_from_tweet(tweet_id)
             media_type = "gif"
-            thread = config.get_image_id()
-            break
 
         elif media.type == "video":
             # Retrieve the video
-            file = tweet_utils.save_video_from_tweet(tweet_id)
-            media_type = "video"
-            thread = config.get_video_id()
-            break
+            if "to_gif" in flags:
+                file = tweet_utils.save_video_as_gif_from_tweet(tweet_id)
+                media_type = "gif"  
+            else:
+                file = tweet_utils.save_video_from_tweet(tweet_id)
+                media_type = "video"                    
 
         elif media.type == "photo":
             # Retrieve the image
@@ -46,8 +46,9 @@ def add_media(tweet_id, title):
                 for chunk in req.iter_content(1024):
                     f.write(chunk)
             media_type = "photo"
-            thread = config.get_image_id()
+        else:
             break
+        media_list.append(api.media_upload(file).media_id_string)
 
     # Process the indexing
     category, text, title, flags = parse_title(title)           
@@ -57,7 +58,7 @@ def add_media(tweet_id, title):
     archived = client.create_tweet(text=title, media_ids=[media.media_id_string])
 
     # Update the database
-    database.add_media_entry(media.media_id_string, text, category, f"https://twitter.com/arquivodojao/status/{archived.data['id']}", media_type)
+    database.add_media(media_list, category, text, user_id, original_tweet)
 
     # Notify the user
     client.retweet(archived.data["id"])
@@ -65,12 +66,13 @@ def add_media(tweet_id, title):
 
 
 def accept_inclusion_entry(uuid, title_replace=None, overwrite_media_tweet=None):
-    uuid, tweet_id, text, url, date, user = database.get_inclusion_entries(uuid)
-    text = text.removeprefix("adicionar ") if not title_replace else title_replace
+    request_uuid, tweet_id, user_id, tweet_text, tweet_meta, tweet_media, timestamp = database.get_request(uuid)[0]
+
+    text = tweet_text.removeprefix("@arquivodojao adicionar ") if not title_replace else title_replace
     reply = auth.get_api().get_status(tweet_id).in_reply_to_status_id if not overwrite_media_tweet else overwrite_media_tweet
-    tweet = add_media(reply, text)
+    tweet = add_media(reply, user_id, tweet_id, text)
     try:
-        tweet_utils.send_dms([user,], text=f"✅ — Sua solicitação de inclusão de mídia no acervo foi aceita pela moderação.\n\nhttps://twitter.com/arquivodojao/status/{tweet.data['id']}")        
+        tweet_utils.send_dms([user_id,], text=f"✅ — Sua solicitação de inclusão de mídia no acervo foi aceita pela moderação.\n\nhttps://twitter.com/arquivodojao/status/{tweet.data['id']}")        
     except:
         pass
     tweet_utils.send_dms(config.get_admin(), text=f"🔮 INFO — Nova inclusão de mídia por meio de solicitação.\n\nhttps://twitter.com/arquivodojao/status/{tweet.data['id']}")

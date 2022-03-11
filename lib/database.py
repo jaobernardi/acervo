@@ -11,7 +11,7 @@ def setup_tables():
 
     users = """
     CREATE TABLE Users (
-        `UserID` INT(36),
+        `UserID` INT(36)
     )
     """
 
@@ -72,7 +72,7 @@ class DatabaseConnection(object):
 def add_user(user_id):
     with DatabaseConnection() as cursor:
         if not get_user(user_id):
-            cursor.execute("INSERT INTO Users(UserID) VALUES (?, ?)", (user_id,))
+            cursor.execute("INSERT INTO Users(UserID) VALUES (?)", (user_id,))
 
 
 
@@ -94,11 +94,11 @@ def delete_user(user_id):
 def add_tweet(tweet_id, tweet_text, tweet_meta, tweet_media, user_id=None):
     if not user_id:
         return    
-
+    add_user(user_id)
     with DatabaseConnection() as cursor:
         if not get_tweet(tweet_id):
             cursor.execute(
-                "INSERT INTO Tweets(TweetID, UserID, TweetText, TweetMeta, TweetMedia, Timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO Tweets(TweetID, UserID, TweetText, TweetMeta, TweetMedia, Timestamp) VALUES (?, ?, ?, ?, ?, ?)",
                 (
                     tweet_id,
                     user_id,
@@ -111,6 +111,8 @@ def add_tweet(tweet_id, tweet_text, tweet_meta, tweet_media, user_id=None):
 
 
 def get_tweet(tweet_id=None, user_id=None):
+    if user_id:
+        add_user(user_id)
     with DatabaseConnection() as cursor:
         if not tweet_id and not user_id:
             tweets = [i for i in cursor.execute("SELECT * FROM Tweets WHERE 1=1")]
@@ -122,7 +124,8 @@ def get_tweet(tweet_id=None, user_id=None):
 def delete_tweet(tweet_id=None, user_id=None):
     if not tweet_id and not user_id:
         return
-
+    if user_id:
+        add_user(user_id)
     with DatabaseConnection() as cursor:
         cursor.execute("DELETE FROM Tweets WHERE UserID=? OR TweetID=?", (user_id, tweet_id))
 
@@ -131,35 +134,57 @@ def delete_tweet(tweet_id=None, user_id=None):
 def add_media(media_id, media_category, media_description, user_id=None, tweet_id=None):
     if not user_id or not tweet_id:
         return
-
+    if user_id:
+        add_user(user_id)
     media_uuid = str(uuid.uuid4())
 
     with DatabaseConnection() as cursor:
-        if not get_media(tweet_uuid=tweet_id):
+        if not get_media(tweet_id=tweet_id):
             cursor.execute(
                 "INSERT INTO Media(MediaUUID, MediaID, UserID, TweetID, MediaCategory, MediaDescription) VALUES (?, ?, ?, ?, ?, ?)",
                 (media_uuid, json.dumps(media_id), user_id, tweet_id, media_category, media_description))
     return media_uuid
 
 def get_media(user_id=None, media_uuid=None, media_category=None, tweet_id=None):
+    if user_id:
+        add_user(user_id)
     with DatabaseConnection() as cursor:
-        media = [i for i in cursor.execute("""
-        SELECT 
-            MediaUUID,
-            MediaID,
-            MediaDescription,
-            MediaCategory,
-            u.*,
-            t.*
+        if not user_id and not media_uuid and not media_category and not tweet_id:
+            media = [i for i in cursor.execute("""
+            SELECT 
+                MediaUUID,
+                MediaID,
+                MediaDescription,
+                MediaCategory,
+                u.*,
+                t.*
 
-        FROM Media AS m
-        INNER JOIN Users AS u
-            ON u.UserID = m.UserID
-        INNER JOIN Tweets AS t
-            ON t.TweetID = m.TweetID
+            FROM Media AS m
+            INNER JOIN Users AS u
+                ON u.UserID = m.UserID
+            INNER JOIN Tweets AS t
+                ON t.TweetID = m.TweetID
 
-        WHERE m.UserID=? OR m.MediaUUID=? OR m.MediaCategory=? OR m.TweetID=?""",
-         (user_id, media_uuid, media_category, tweet_id))]
+            WHERE 1=1""",
+            )]
+        else:
+            media = [i for i in cursor.execute("""
+            SELECT 
+                MediaUUID,
+                MediaID,
+                MediaDescription,
+                MediaCategory,
+                u.*,
+                t.*
+
+            FROM Media AS m
+            INNER JOIN Users AS u
+                ON u.UserID = m.UserID
+            INNER JOIN Tweets AS t
+                ON t.TweetID = m.TweetID
+
+            WHERE m.UserID=? OR m.MediaUUID=? OR m.MediaCategory=? OR m.TweetID=?""",
+            (user_id, media_uuid, media_category, tweet_id))]
     return media
 
 
@@ -171,6 +196,11 @@ def delete_media(media_uuid=None, tweet_id=None, user_id=None):
 def add_request(user_id=None, tweet_id=None):
     if not user_id or not tweet_id:
         return
+    if user_id:
+        add_user(user_id)
+    
+    if req := get_request(None, user_id, tweet_id):
+        return req[0][0]
 
     request_uuid = str(uuid.uuid4())
 
@@ -183,32 +213,50 @@ def add_request(user_id=None, tweet_id=None):
 
 
 def get_request(request_uuid=None, user_id=None, tweet_id=None):
-    if not user_id and not tweet_id and not request_uuid:
-        return
+
+    if user_id:
+        add_user(user_id)
 
     output = []
     with DatabaseConnection() as cursor:
-        cursor.execute(
-        """SELECT
-            r.RequestUUID,
-            u.UserID,
-            t.*
-        FROM RequestQueue AS r
-        INNER JOIN Tweets AS t
-            ON t.TweetID = r.TweetID
-        INNER JOIN Users as u
-            ON u.UserID = r.UserID
-        WHERE RequestUUID=? OR r.UserID=? or r.TweetID=?""",
-        (request_uuid, user_id, tweet_id))
+        if not user_id and not tweet_id and not request_uuid:
+            cursor.execute(
+            """SELECT
+                r.RequestUUID,
+                t.*
+            FROM RequestQueue AS r
+            INNER JOIN Tweets AS t
+                ON t.TweetID = r.TweetID
+            WHERE 1=1""",
+            )
+        else:
+            cursor.execute(
+            """SELECT
+                r.RequestUUID,
+                u.UserID,
+                t.*
+            FROM RequestQueue AS r
+            INNER JOIN Tweets AS t
+                ON t.TweetID = r.TweetID
+            INNER JOIN Users as u
+                ON u.UserID = r.UserID
+            WHERE RequestUUID=? OR r.UserID=? or r.TweetID=?""",
+            (request_uuid, user_id, tweet_id))
         output = [i for i in cursor]
     return output
 
 
-def remove_request(request_uuid=None, user_uuid=None, user_id=None, tweet_id=None, tweet_uuid=None):
-    if (not user_id and not user_uuid) or (not tweet_uuid and not tweet_id) or not request_uuid:
+def remove_request(request_uuid=None, user_id=None, tweet_id=None):
+    if not user_id and not tweet_id and not request_uuid:
         return
-
+    if user_id:
+        add_user(user_id)
     with DatabaseConnection() as cursor:
         cursor.execute(
         "DELETE FROM RequestQueue WHERE RequestUUID=? OR TweetID=? OR UserID=?",
         (request_uuid, tweet_id, user_id))
+
+def clear_requests():
+    with DatabaseConnection() as cursor:
+        cursor.execute(
+        "DELETE FROM RequestQueue WHERE 1=1")

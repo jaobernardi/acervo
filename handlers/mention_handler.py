@@ -57,7 +57,8 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
             # Check if author is an admin (placeholder solution)
             if status.user.id not in config.get_admin():
                 client.create_tweet(text=f"🔮 — Sua solicitação de inclusão será submetida a análise e poderá ser aceita ou indeferida. ;)\n\n(Você pode acompanhar a situação da sua solicitação pela DM)", direct_message_deep_link="https://twitter.com/messages/compose?recipient_id=1306855576081772544", in_reply_to_tweet_id=status.id)
-                id = database.add_inclusion_entry(status.id, " ".join(tokens), f"https://twitter.com/{status.user.screen_name}/status/{status.id}", status.user.id)
+                id = database.add_request(status.user.id, status.id)
+
                 options = [
                     {
                     "label": "Aprovado",
@@ -127,9 +128,9 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
             # Add download if needed
             if media_type == "video":
                 response = client.create_tweet(text=f"📸 — Esta mídia está disponível para download em: https://services.jaobernardi.space/twitter/video/{tweet_id}", in_reply_to_tweet_id=archived.data["id"])
-            
+
             # Update the database
-            database.add_media_entry(media_list[0], text, category, f"https://twitter.com/arquivodojao/status/{archived.data['id']}", media_type)
+            database.add_media(media_list, category, text, status.user.id, status.id)
 
             # Notify the user
             response = client.create_tweet(text=f"📖 — Esta mídia foi incluída no acervo sob a categoria '{category}'.", in_reply_to_tweet_id=status.id, quote_tweet_id=archived.data["id"])
