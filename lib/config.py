@@ -24,6 +24,9 @@ def get_database():
 def get_bearer():
     return get_data()["bearer_token"]
 
+def get_stream_auth():
+    return get_data()['stream_auth']
+
 def get_api_token():
     return get_data()["consumer_key"]
 
