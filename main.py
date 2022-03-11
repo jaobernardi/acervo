@@ -1,10 +1,8 @@
 from concurrent.futures import thread
 from re import S
-import tweepy
 import pyding
-from lib import config, stream, handlers, auth
+from lib import config, stream, handlers, auth, webhook
 import logging
-import getpass
 
 
 logging.basicConfig(level=logging.INFO)
@@ -28,11 +26,9 @@ def main():
     s = stream.MentionCheck(client, api, config.get_api_token(), config.get_api_secret(), config.get_access_token(), config.get_access_token_secret(), )
 
     s.filter(track=['arquivodojao'], threaded=True)
-    while True:
-        command = getpass.getpass("")
-        if command == "reload":
-            logging.info("Reloading handlers")
-            handlers.reload_handlers()
+
+    webhook.fetch_data()
+
 main()
 
 

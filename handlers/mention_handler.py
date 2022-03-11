@@ -17,6 +17,10 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
         tokens = [i for i in status.extended_tweet['full_text'].split(" ")[1:] if not i.startswith("@")]
 
     match tokens:
+
+        case ["beta_features", "baixar" | "download"]:
+            client.create_tweet(text=f"📸 — Esta mídia está disponível para download em: https://services.jaobernardi.space/twitter/video/{status.in_reply_to_status_id}", in_reply_to_tweet_id=status.id)
+
         case ["beta_features", "low_poly", *args]:
             if status.in_reply_to_status_id:                
                 # Retrieve original tweet
@@ -120,7 +124,10 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
             # Upload the file and create the tweet 
             
             archived = client.create_tweet(text=title, media_ids=media_list)
-
+            # Add download if needed
+            if media_type == "video":
+                response = client.create_tweet(text=f"📸 — Esta mídia está disponível para download em: https://services.jaobernardi.space/twitter/video/{tweet_id}", in_reply_to_tweet_id=archived.data["id"])
+            
             # Update the database
             database.add_media_entry(media_list[0], text, category, f"https://twitter.com/arquivodojao/status/{archived.data['id']}", media_type)
 

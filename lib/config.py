@@ -1,6 +1,9 @@
 import json
 
 
+def get_stream_url():
+    return get_data()['stream_url']
+
 def get_id():
     return get_data()["user_id"]
 
@@ -21,11 +24,14 @@ def get_database():
 def get_bearer():
     return get_data()["bearer_token"]
 
+def get_stream_auth():
+    return get_data()['stream_auth']
+
 def get_api_token():
-    return get_data()["api_key"]
+    return get_data()["consumer_key"]
 
 def get_api_secret():
-    return get_data()["api_key_secret"]
+    return get_data()["consumer_secret"]
 
 def get_access_token():
     return get_data()["access_token"]
