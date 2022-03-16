@@ -43,6 +43,7 @@ def setup_tables():
     inclusion_queue = """
     CREATE TABLE RequestQueue (
         `RequestUUID` TEXT(36),
+        `Status` TEXT(16),
         `TweetID` TEXT(36),
         `UserID` TEXT(36),
         FOREIGN KEY(UserID) REFERENCES Users(UserID),
@@ -193,7 +194,7 @@ def delete_media(media_uuid=None, tweet_id=None, user_id=None):
         cursor.execute("DELETE FROM Users WHERE UserID=? OR TweetID=? OR MediaUUID=?", (user_id, tweet_id, media_uuid))
 
 # Inclusion Queue manipulation methods
-def add_request(user_id=None, tweet_id=None):
+def add_request(user_id=None, tweet_id=None, status="Pendente"):
     if not user_id or not tweet_id:
         return
     if user_id:
@@ -206,10 +207,17 @@ def add_request(user_id=None, tweet_id=None):
 
     with DatabaseConnection() as cursor:
         cursor.execute(
-        "INSERT INTO RequestQueue(RequestUUID, TweetID, UserID) VALUES (?, ?, ?)",
-        (request_uuid, tweet_id, user_id))
+        "INSERT INTO RequestQueue(RequestUUID, Status, TweetID, UserID) VALUES (?, ?, ?, ?)",
+        (request_uuid, status, tweet_id, user_id))
 
     return request_uuid
+
+
+def edit_request(request_uuid, status):
+    with DatabaseConnection() as cursor:
+        cursor.execute(
+        "UPDATE RequestQueue SET Status = ? WHERE RequestUUID = ?",
+        (status, request_uuid))
 
 
 def get_request(request_uuid=None, user_id=None, tweet_id=None):
@@ -223,6 +231,7 @@ def get_request(request_uuid=None, user_id=None, tweet_id=None):
             cursor.execute(
             """SELECT
                 r.RequestUUID,
+                r.Status,
                 t.*
             FROM RequestQueue AS r
             INNER JOIN Tweets AS t
@@ -233,13 +242,11 @@ def get_request(request_uuid=None, user_id=None, tweet_id=None):
             cursor.execute(
             """SELECT
                 r.RequestUUID,
-                u.UserID,
+                r.Status,
                 t.*
             FROM RequestQueue AS r
             INNER JOIN Tweets AS t
                 ON t.TweetID = r.TweetID
-            INNER JOIN Users as u
-                ON u.UserID = r.UserID
             WHERE RequestUUID=? OR r.UserID=? or r.TweetID=?""",
             (request_uuid, user_id, tweet_id))
         output = [i for i in cursor]

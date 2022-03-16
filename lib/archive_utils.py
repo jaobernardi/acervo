@@ -3,25 +3,16 @@ import requests
 import os
 
 
-def rectify_video_entry(tweet_id):
-    client = auth.get_client()
-    tweet = client.get_tweet(tweet_id, expansions="attachments.media_keys,author_id", user_auth=True)
-    title = tweet.data.text
-    category, *text = title.split(" — ") if " — " in title else ('Diverso/Não específico', title)  
-    media = tweet.includes['media'][0].media_key.split("_")[1]
-
-    database.add_media([media], category, text, tweet.includes['users'][0].id, tweet_id)
-
-
-def add_media(tweet_id, user_id, original_tweet, title):
-    client = auth.get_client()
-    api = auth.get_api()
+def add_media(tweet_id, user_id, original_tweet, title, client=auth.get_client(), api=auth.get_api()):
     tweet = client.get_tweet(tweet_id, user_auth=True, expansions="attachments.media_keys", media_fields="url")
 
     # Check if there is any media in the tweet
     if "media" not in tweet.includes:
         return
+
     media_list = []
+    # Process the indexing
+    category, text, title, flags = parse_title(title)  
     # Retrieve media
     for media in tweet.includes["media"]:
         if media.type == "animated_gif":
@@ -50,8 +41,6 @@ def add_media(tweet_id, user_id, original_tweet, title):
             break
         media_list.append(api.media_upload(file).media_id_string)
 
-    # Process the indexing
-    category, text, title, flags = parse_title(title)           
 
     # Upload the file and create the tweet 
     media = api.media_upload(file)
@@ -61,14 +50,16 @@ def add_media(tweet_id, user_id, original_tweet, title):
     database.add_media(media_list, category, text, user_id, original_tweet)
 
     # Notify the user
+    response = client.create_tweet(text=f"📖 — Esta mídia foi incluída no acervo sob a categoria '{category}'.", in_reply_to_tweet_id=original_tweet, quote_tweet_id=archived.data["id"])
     client.retweet(archived.data["id"])
     return archived
 
 
 def accept_inclusion_entry(uuid, title_replace=None, overwrite_media_tweet=None):
-    request_uuid, tweet_id, user_id, tweet_text, tweet_meta, tweet_media, timestamp = database.get_request(uuid)[0]
+    print(database.get_request(uuid)[0])
+    request_uuid, request_status, tweet_id, user_id, tweet_text, tweet_media, tweet_meta, timestamp = database.get_request(uuid)[0]
 
-    text = tweet_text.removeprefix("@arquivodojao adicionar ") if not title_replace else title_replace
+    text = tweet_text.split("@arquivodojao adicionar ")[-1] if not title_replace else title_replace
     reply = auth.get_api().get_status(tweet_id).in_reply_to_status_id if not overwrite_media_tweet else overwrite_media_tweet
     tweet = add_media(reply, user_id, tweet_id, text)
     try:
@@ -76,6 +67,7 @@ def accept_inclusion_entry(uuid, title_replace=None, overwrite_media_tweet=None)
     except:
         pass
     tweet_utils.send_dms(config.get_admin(), text=f"🔮 INFO — Nova inclusão de mídia por meio de solicitação.\n\nhttps://twitter.com/arquivodojao/status/{tweet.data['id']}")
+    database.edit_request(request_uuid, "Aceito")
 
 
 def parse_title(title):

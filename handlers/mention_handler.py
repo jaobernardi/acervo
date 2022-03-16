@@ -17,6 +17,24 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
         tokens = [i for i in status.extended_tweet['full_text'].split(" ")[1:] if not i.startswith("@")]
 
     match tokens:
+        case ["debug", "pending"]:
+            client.create_tweet(text=f"🔮 — Sua solicitação de inclusão será submetida a análise e poderá ser aceita ou indeferida. ;)\n\n(Você pode acompanhar a situação da sua solicitação pela DM)", direct_message_deep_link="https://twitter.com/messages/compose?recipient_id=1306855576081772544&welcome_message=1503706441005379594", in_reply_to_tweet_id=status.id)
+            id = database.add_request(status.user.id, status.id)
+
+            options = [
+                {
+                "label": "Aprovado",
+                "description": "Solicitação ficará aprovada.",
+                "metadata": f"requests:approved:{id}"
+                },
+                {
+                "label": "Indeferido",
+                "description": "Solicitação ficará indeferida por ser duplicata ou inadequada.",
+                "metadata": f"requests:reject:{id}"
+                }
+            ]
+            tweet_utils.send_dms(config.get_admin(), text=f"Olá! O seguinte requerimento aguarda deferimento:\nhttps://twitter.com/{status.user.screen_name}/status/{status.id}", quick_reply_options=options)
+            return
 
         case ["beta_features", "baixar" | "download"]:
             client.create_tweet(text=f"📸 — Esta mídia está disponível para download em: https://services.jaobernardi.space/twitter/video/{status.in_reply_to_status_id}", in_reply_to_tweet_id=status.id)
@@ -63,12 +81,12 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
                     {
                     "label": "Aprovado",
                     "description": "Solicitação ficará aprovada.",
-                    "metadata": f"approved-{id}"
+                    "metadata": f"requests:approved:{id}"
                     },
                     {
                     "label": "Indeferido",
                     "description": "Solicitação ficará indeferida por ser duplicata ou inadequada.",
-                    "metadata": f"reject-{id}"
+                    "metadata": f"requests:reject:{id}"
                     }
                 ]
                 tweet_utils.send_dms(config.get_admin(), text=f"Olá! O seguinte requerimento aguarda deferimento:\nhttps://twitter.com/{status.user.screen_name}/status/{status.id}", quick_reply_options=options)

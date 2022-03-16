@@ -44,13 +44,16 @@ def webhook(event, data):
             pyding.call("tweet_like", tweet=tweet['favorited_status']['id'], data=tweet)
     
     if "direct_message_events" in data:
+        print(json.dumps(data))
         for dm in data['direct_message_events']:
             if dm['type'] == "message_create":
+                quick_reply = {} if "quick_reply_response" not in dm['message_create']['message_data'] else dm['message_create']['message_data']['quick_reply_response']
                 pyding.call("direct_message",
                     message=dm['message_create']['message_data']['text'],
                     meta=dm['message_create']['message_data']['entities'],
                     sender_id=dm['message_create']['sender_id'],
                     user=data['users'][dm['message_create']['sender_id']],
+                    quick_reply=quick_reply,
                     data=dm
                 )
     return
