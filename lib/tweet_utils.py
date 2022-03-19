@@ -2,7 +2,7 @@ import requests
 import re
 import json
 from os import path, system
-from . import auth
+from . import auth, debugs
 import uuid
 
 
@@ -44,7 +44,7 @@ def get_video(tweet_id):
     # Set headers and start a session
     headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:76.0) Gecko/20100101 Firefox/76.0','accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9','accept-language' : 'es-419,es;q=0.9,es-ES;q=0.8,en;q=0.7,en-GB;q=0.6,en-US;q=0.5'}
     session = requests.Session()
-
+    
     token_request = send_request(session, sources["video_url"], "GET", headers)
     bearer_file = re.findall('src="(.*js)',token_request)
     file_content = send_request(session, str(bearer_file[0]), 'GET',headers)
