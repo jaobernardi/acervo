@@ -47,7 +47,7 @@ def add_media(tweet_id, user_id, original_tweet, title, client=auth.get_client()
     archived = client.create_tweet(text=title, media_ids=[media.media_id_string])
 
     # Update the database
-    database.add_media(media_list, category, text, user_id, original_tweet)
+    database.add_media(media_list, category, text, user_id, archived['id'])
 
     # Notify the user
     response = client.create_tweet(text=f"📖 — Esta mídia foi incluída no acervo sob a categoria '{category}'.", in_reply_to_tweet_id=original_tweet, quote_tweet_id=archived.data["id"])
@@ -58,7 +58,8 @@ def add_media(tweet_id, user_id, original_tweet, title, client=auth.get_client()
 def accept_inclusion_entry(uuid, title_replace=None, overwrite_media_tweet=None):
     print(database.get_request(uuid)[0])
     request_uuid, request_status, tweet_id, user_id, tweet_text, tweet_media, tweet_meta, timestamp = database.get_request(uuid)[0]
-
+    if request_status != "Pendente":
+        return False
     text = tweet_text.split("@arquivodojao adicionar ")[-1] if not title_replace else title_replace
     reply = auth.get_api().get_status(tweet_id).in_reply_to_status_id if not overwrite_media_tweet else overwrite_media_tweet
     tweet = add_media(reply, user_id, tweet_id, text)
@@ -68,6 +69,7 @@ def accept_inclusion_entry(uuid, title_replace=None, overwrite_media_tweet=None)
         pass
     tweet_utils.send_dms(config.get_admin(), text=f"🔮 INFO — Nova inclusão de mídia por meio de solicitação.\n\nhttps://twitter.com/arquivodojao/status/{tweet.data['id']}")
     database.edit_request(request_uuid, "Aceito")
+    return True
 
 
 def parse_title(title):

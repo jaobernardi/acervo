@@ -4,15 +4,20 @@ from datetime import date, datetime
 
 @pyding.on("direct_message")
 def direct_message_handler(event, message, meta, sender_id, user, quick_reply, data):
+    print(message, data)
     if sender_id == config.get_id():
         return
     if quick_reply:
         match quick_reply['metadata'].split(":"):
             case ["requests", "approved", uuid]:
-                archive_utils.accept_inclusion_entry(uuid)
-                now = datetime.now().strftime("%H horas e %M minuto(s)")
-                tweet_utils.send_dms(config.get_admin(), text=f"🔮 — A solicitação de identificador único “{uuid}” foi aprovada às {now}.")
+                success = archive_utils.accept_inclusion_entry(uuid)
+                if success:
+                    now = datetime.now().strftime("%H horas e %M minuto(s)")
+                    tweet_utils.send_dms(config.get_admin(), text=f"🔮 — A solicitação de identificador único “{uuid}” foi aprovada às {now}.")
+                else:
+                    tweet_utils.send_dms(sender_id, text=f"⛔️ — A solicitação de identificador único “{uuid}” está com o status de {request_status}, portanto não pode ser processada novamente.")
 
+                
             case ['requests', 'reject', uuid]:
                 database.edit_request(uuid, "Rejeitada")
                 request_uuid, request_status, tweet_id, user_id, *extra = database.get_request(uuid)[0]
