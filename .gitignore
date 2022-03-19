@@ -4,3 +4,4 @@
 __pycache__/
 intake.txt
 database.sql
+.vscode/
