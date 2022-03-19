@@ -14,12 +14,10 @@ def get_auth():
 
 def get_client():
     auth = get_auth()
-    logging.info("Connecting client interface ")
     return tweepy.Client(**auth)
 
 
 def get_api():
     auth = get_auth()
     auth = tweepy.OAuth1UserHandler(**auth)
-    logging.info("Connecting Api 1.1 interface")
     return tweepy.API(auth)
