@@ -191,7 +191,7 @@ def get_media(user_id=None, media_uuid=None, media_category=None, tweet_id=None)
 
 def delete_media(media_uuid=None, tweet_id=None, user_id=None):
     with DatabaseConnection() as cursor:
-        cursor.execute("DELETE FROM Users WHERE UserID=? OR TweetID=? OR MediaUUID=?", (user_id, tweet_id, media_uuid))
+        cursor.execute("DELETE FROM Media WHERE UserID=? OR TweetID=? OR MediaUUID=?", (user_id, tweet_id, media_uuid))
 
 # Inclusion Queue manipulation methods
 def add_request(user_id=None, tweet_id=None, status="Pendente"):
