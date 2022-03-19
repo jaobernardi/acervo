@@ -18,6 +18,9 @@ def get_data():
         data = json.load(file)
     return data
 
+def get_notifiers():
+    return get_data()['notifiers']
+
 def get_database():
     return get_data()["database"]
 
