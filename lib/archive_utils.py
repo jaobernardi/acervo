@@ -47,7 +47,7 @@ def add_media(tweet_id, user_id, original_tweet, title, client=auth.get_client()
     archived = client.create_tweet(text=title, media_ids=[media.media_id_string])
 
     # Update the database
-    database.add_media(media_list, category, text, user_id, archived['id'])
+    database.add_media(media_list, category, text, user_id, archived.data['id'])
 
     # Notify the user
     response = client.create_tweet(text=f"📖 — Esta mídia foi incluída no acervo sob a categoria '{category}'.", in_reply_to_tweet_id=original_tweet, quote_tweet_id=archived.data["id"])
@@ -82,7 +82,6 @@ def parse_title(title):
     text = " ".join(text)
     flags = []
     for word in text.split(" "):
-        print(word)
         match word:
             case "-to_gif":
                 flags.append("to_gif")
