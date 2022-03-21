@@ -28,12 +28,13 @@
 <br>
 
 ### ⚙️ Funções e Planejamento
-- [ ] API integrada com *api.jaobernardi.space*
+- [x] Integrações
+    * [ ] API integrada com *api.jaobernardi.space*
+    * [x] Webhook através do *api.jaobernardi.space*
     * [ ] Integração de extensões para browsers.
     * [ ] Publicação de status e tracking de uptime.
 - [x] Dados salvos em database.
 - [x] Send-only mensagens diretas.
-- [ ] Stream de mensagens diretas.
 - [ ] Filtro de duplicidade de conteúdo.
 - [x] Logging
 - [ ] Auto-deploy
