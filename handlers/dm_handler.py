@@ -1,12 +1,14 @@
+import logging
 import pyding
 from lib import tweet_utils, config, archive_utils, database
 from datetime import date, datetime
 
 @pyding.on("direct_message")
 def direct_message_handler(event, message, meta, sender_id, user, quick_reply, data):
-    print(message, data)
     if sender_id == config.get_id():
         return
+
+    logging.info(f"[{user['screen_name']}] :: {message}")
     if quick_reply:
         match quick_reply['metadata'].split(":"):
             case ["requests", "approved", uuid]:
@@ -15,7 +17,8 @@ def direct_message_handler(event, message, meta, sender_id, user, quick_reply, d
                     now = datetime.now().strftime("%H horas e %M minuto(s)")
                     tweet_utils.send_dms(config.get_admin(), text=f"🔮 — A solicitação de identificador único “{uuid}” foi aprovada às {now}.")
                 else:
-                    tweet_utils.send_dms(sender_id, text=f"⛔️ — A solicitação de identificador único “{uuid}” está com o status de {request_status}, portanto não pode ser processada novamente.")
+                    request_uuid, request_status, tweet_id, user_id, *extra = database.get_request(uuid)[0]
+                    tweet_utils.send_dms(sender_id, text=f"⛔️ — A solicitação de identificador único “{uuid}” está com o status de Aprovada, portanto não pode ser processada novamente.")
 
                 
             case ['requests', 'reject', uuid]:
