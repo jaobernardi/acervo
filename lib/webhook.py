@@ -54,7 +54,6 @@ def webhook(event, data):
     if "direct_message_events" in data:
         for dm in data['direct_message_events']:
             if dm['id'] in events:
-                logging.warn(f"Twitter API is sending duplicate events.")
                 return
             events.append(dm['id'])
             if dm['type'] == "message_create":

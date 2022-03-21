@@ -18,7 +18,7 @@ def direct_message_handler(event, message, meta, sender_id, user, quick_reply, d
                     tweet_utils.send_dms(config.get_admin(), text=f"🔮 — A solicitação de identificador único “{uuid}” foi aprovada às {now}.")
                 else:
                     request_uuid, request_status, tweet_id, user_id, *extra = database.get_request(uuid)[0]
-                    tweet_utils.send_dms(sender_id, text=f"⛔️ — A solicitação de identificador único “{uuid}” está com o status de Aprovada, portanto não pode ser processada novamente.")
+                    tweet_utils.send_dms(sender_id, text=f"⛔️ — A solicitação de identificador único “{uuid}” está com o status de {request_status}, portanto não pode ser processada novamente.")
 
                 
             case ['requests', 'reject', uuid]:
