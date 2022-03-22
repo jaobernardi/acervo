@@ -200,7 +200,7 @@ def add_request(user_id=None, tweet_id=None, status="Pendente"):
     if user_id:
         add_user(user_id)
     
-    if req := get_request(None, user_id, tweet_id):
+    if req := get_request(tweet_id=tweet_id):
         return req[0][0]
 
     request_uuid = str(uuid.uuid4())
