@@ -1,4 +1,4 @@
-![Arquivo do Jão](assets/arquivo_do_jão_bg.png)
+![Arquivo do Jão](https://jaobernardi.space/archive.png)
 <hr>
 <p align="center">Acervo de memes simples, automático e eficiente.</p>
 <p align="center">
