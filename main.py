@@ -3,7 +3,7 @@ from re import S
 import pyding
 from lib import config, stream, handlers, auth, webhook
 import logging
-
+from time import time
 
 logging.basicConfig(level=logging.INFO)
 
@@ -15,10 +15,9 @@ def main():
     api = auth.get_api()
 
     # Spin up the handlers and call events
-
     logging.info("Spinning handlers")
     handlers.load_handlers()
-    pyding.call("uptime_ping", client=client)
+    pyding.call("uptime_ping")
 
     # Spin up the stream
 

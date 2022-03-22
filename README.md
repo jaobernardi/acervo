@@ -29,9 +29,7 @@
 
 ### ⚙️ Funções e Planejamento
 - [x] Integrações
-    * [ ] API integrada com *api.jaobernardi.space*
     * [x] Webhook através do *api.jaobernardi.space*
-    * [ ] Integração de extensões para browsers.
     * [ ] Publicação de status e tracking de uptime.
 - [x] Dados salvos em database.
 - [x] Send-only mensagens diretas.
