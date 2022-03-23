@@ -26,7 +26,6 @@ def direct_message_handler(event, message, meta, sender_id, user, quick_reply, d
                 request_uuid, request_status, tweet_id, user_id, *extra = database.get_request(uuid)[0]
                 now = datetime.now().strftime("%H horas e %M minuto(s)")
                 tweet_utils.send_dms(config.get_admin(), text=f"🔮 — A solicitação de identificador único “{uuid}” foi rejeitada às {now}.")
-                tweet_utils.send_dms(user_id, text=f"📛 — A sua solicitação foi rejeitada pela moderação.\nhttps://twitter.com/{user_id}/status/{tweet_id}")
         
             case ['requests', 'see', uuid]:
                 request_uuid, request_status, tweet_id, user_id, *extra = database.get_request(uuid)[0]
