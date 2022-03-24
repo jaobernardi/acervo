@@ -1,5 +1,3 @@
-from nis import cat
-from attr import has
 import pyding
 from lib import tweet_utils, config, database
 import tweepy
