@@ -79,7 +79,7 @@ def save_video_as_gif_from_tweet(tweet_id, chunksize=1024):
     return filename.removesuffix(".mp4")+".gif"
 
 
-def save_video_from_tweet(tweet_id, chunksize=1024):
+def save_video_from_tweet(tweet_id, chunksize=1024, return_url=False):
     tweet_id = str(tweet_id)
     url = get_video(tweet_id)
     r = requests.get(url, stream=True)
@@ -87,5 +87,7 @@ def save_video_from_tweet(tweet_id, chunksize=1024):
     with open(f"cache/{filename}.mp4", "wb") as file:
         for chunk in r.iter_content(chunksize):
             file.write(chunk)
+    if return_url:
+        return f"cache/{filename}.mp4", url
     return f"cache/{filename}.mp4"
 
