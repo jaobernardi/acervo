@@ -6,6 +6,8 @@ import pyding
 import base64
 import time
 from . import utils
+import sys
+import traceback
 
 
 def fetch_data(timeout=2):
@@ -29,6 +31,8 @@ def fetch_data(timeout=2):
                 try:
                     pyding.call("webhook_event", data=json.loads(data))
                 except Exception as e:
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+                    traceback.print_tb(exc_traceback, limit=1, file=sys.stdout)
                     logging.error(f"Failed to call webhook events, {e}")
                 data = b""
     except KeyboardInterrupt:
