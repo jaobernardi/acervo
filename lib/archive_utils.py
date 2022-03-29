@@ -7,8 +7,9 @@ import os
 
 # TODO: rewrite this
 
-def archive_media(tweet_id: typing.Union(int, str), user_id: typing.Union(int, str),
-    media_tweet_id: typing.Union(int, str), category: str, description: str, flags: list):
+
+def archive_media(tweet_id, user_id,
+    media_tweet_id, category: str, description: str, flags: list):
 
     client = auth.get_client()
     api = auth.get_api()
@@ -20,16 +21,16 @@ def archive_media(tweet_id: typing.Union(int, str), user_id: typing.Union(int, s
     for media in media_tweet.includes['media']:
         # Acquire media
         if media.type == "animated_gif":
-            file = tweet_utils.save_video_as_gif_from_tweet(tweet_id)
+            file = tweet_utils.save_video_as_gif_from_tweet(media_tweet_id)
             media_type = "gif"
 
         elif media.type == "video":
             # Retrieve the video
             if "to_gif" in flags:
-                file = tweet_utils.save_video_as_gif_from_tweet(tweet_id)
+                file = tweet_utils.save_video_as_gif_from_tweet(media_tweet_id)
                 media_type = "gif"  
             else:
-                file = tweet_utils.save_video_from_tweet(tweet_id)
+                file = tweet_utils.save_video_from_tweet(media_tweet_id)
                 media_type = "video"                    
 
         elif media.type == "photo":
@@ -46,14 +47,17 @@ def archive_media(tweet_id: typing.Union(int, str), user_id: typing.Union(int, s
         media_list.append(api.media_upload(file).media_id_string)
 
     # Upload the file and create the tweet 
-    media = api.media_upload(file)
-    archived = client.create_tweet(text=f"{category} — {description}", media_ids=[media.media_id_string])
+    if category != 'Diverso/Não específico':
+        archived = client.create_tweet(text=f"{category} — {description}", media_ids=media_list)
+    else:
+        archived = client.create_tweet(text=f"{description}", media_ids=media_list)
 
     # Update the database
     database.add_media(media_list, category, description, user_id, archived.data['id'])
 
     # Notify the user
-    response = client.create_tweet(text=f"📖 — Esta mídia foi incluída no acervo sob a categoria '{category}'.", in_reply_to_tweet_id=tweet_id, quote_tweet_id=archived.data["id"])
+    if tweet_id:
+        response = client.create_tweet(text=f"📖 — Esta mídia foi incluída no acervo sob a categoria '{category}'.", in_reply_to_tweet_id=tweet_id, quote_tweet_id=archived.data["id"])
     client.retweet(archived.data["id"])
     return archived
 
@@ -67,9 +71,9 @@ def accept_inclusion_entry(uuid, title_replace=None, overwrite_media_tweet=None)
     text = tweet_text.split("@arquivodojao adicionar ")[-1] if not title_replace else title_replace
     reply = auth.get_api().get_status(tweet_id).in_reply_to_status_id if not overwrite_media_tweet else overwrite_media_tweet
 
-    category, description, text, flags = parse_title()
+    category, description, text, flags = parse_title(text)
 
-    tweet = archive_media(reply, user_id, tweet_id, category, description, flags)
+    tweet = archive_media(tweet_id, user_id, reply, category, description, flags)
     try:
         tweet_utils.send_dms([user_id,], text=f"✅ — Sua solicitação de inclusão de mídia no acervo foi aceita pela moderação.\n\nhttps://twitter.com/arquivodojao/status/{tweet.data['id']}")        
     except:
