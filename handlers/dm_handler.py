@@ -27,7 +27,52 @@ def direct_message_handler(event, message, meta, sender_id, user, quick_reply, d
                         archived = archive_utils.archive_media(None, int(sender_id), id, category, description, flags)
                         tweet_utils.send_dms(sender_id, text=f"🔮 — Esta mídia foi incluída no acervo sob a categoria '{category}'. https://twitter.com/arquivodojao/status/{archived.data['id']}")
 
- 
+
+    if int(sender_id) in config.get_admin():
+        match message.split():
+            case ["get", "pending"]:
+                output = ["🔮 — Os seguintes pedidos estão listados como pendentes:"]
+                for req in database.get_request():
+                    request_uuid, request_status, tweet_id, user_id, tweet_text, tweet_media, tweet_meta, timestamp = req
+                    if request_status == "Pendente":
+                        output.append(f"🔮 — {tweet_text} https://twitter.com/{user_id}/status/{tweet_id} ({request_uuid})")
+                tweet_utils.send_dms(sender_id, text=output)
+            case ["approve" | "accept", "uuid", uuid, "edit", *text]:
+                success = archive_utils.accept_inclusion_entry(uuid, " ".join(text))
+                if success:
+                    now = datetime.now().strftime("%H horas e %M minuto(s)")
+                    tweet_utils.send_dms(config.get_admin(), text=f"🔮 — A solicitação de identificador único “{uuid}” foi aprovada às {now}.")
+                else:
+                    request_uuid, request_status, tweet_id, user_id, *extra = database.get_request(uuid)[0]
+                    tweet_utils.send_dms(sender_id, text=f"⛔️ — A solicitação de identificador único “{uuid}” está com o status de {request_status}, portanto não pode ser processada novamente.")
+            
+
+            case ["approve" | "accept", "uuid", uuid]:
+                success = archive_utils.accept_inclusion_entry(uuid)
+                if success:
+                    now = datetime.now().strftime("%H horas e %M minuto(s)")
+                    tweet_utils.send_dms(config.get_admin(), text=f"🔮 — A solicitação de identificador único “{uuid}” foi aprovada às {now}.")
+                else:
+                    request_uuid, request_status, tweet_id, user_id, *extra = database.get_request(uuid)[0]
+                    tweet_utils.send_dms(sender_id, text=f"⛔️ — A solicitação de identificador único “{uuid}” está com o status de {request_status}, portanto não pode ser processada novamente.")
+            
+            case ["reject", "uuid", uuid, "cause", *cause]:
+                database.edit_request(uuid, "Rejeitada")
+                request_uuid, request_status, tweet_id, user_id, *extra = database.get_request(uuid)[0]
+                now = datetime.now().strftime("%H horas e %M minuto(s)")
+                tweet_utils.send_dms(config.get_admin(), text=f"🔮 — A solicitação de identificador único “{uuid}” foi rejeitada às {now}.")
+                tweet_utils.send_dms(user_id, text=f"🔮 — A sua solicitação foi negada pela moderação. Motivo: {' '.join(cause)}\n https://twitter.com/{user_id}/status/{tweet_id}")
+
+            
+            case ["reject", "uuid", uuid]:
+                database.edit_request(uuid, "Rejeitada")
+                request_uuid, request_status, tweet_id, user_id, *extra = database.get_request(uuid)[0]
+                now = datetime.now().strftime("%H horas e %M minuto(s)")
+                tweet_utils.send_dms(config.get_admin(), text=f"🔮 — A solicitação de identificador único “{uuid}” foi rejeitada às {now}.")
+                tweet_utils.send_dms(user_id, text=f"🔮 — A sua solicitação foi negada pela moderação.\n https://twitter.com/{user_id}/status/{tweet_id}")
+            
+
+
     if sender_id in user_data and 'editing_request' in user_data[sender_id] and user_data[sender_id]['editing_request']:
         user_data[sender_id]['editing_request'] = False
         success = archive_utils.accept_inclusion_entry(user_data[sender_id]['uuid'], message)
