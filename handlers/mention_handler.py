@@ -53,7 +53,7 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
                            
         case ["adicionar", *title]:
             # Check if author is an admin (placeholder solution)
-            if True or status.user.id not in config.get_admin():
+            if status.user.id not in config.get_admin():
                 client.create_tweet(text=f"🔮 — Sua solicitação de inclusão será submetida a análise e poderá ser aceita ou indeferida. ;)\n\n(Você pode acompanhar a situação da sua solicitação pela DM)", direct_message_deep_link="https://twitter.com/messages/compose?recipient_id=1306855576081772544&text=Qual%20a%20situa%C3%A7%C3%A3o%20dos%20meus%20pedidos?", in_reply_to_tweet_id=status.id)
                 id = database.add_request(status.user.id, status.id)
 
@@ -131,7 +131,7 @@ def mention(event, status, client: tweepy.Client, api: tweepy.API):
             archived = client.create_tweet(text=title, media_ids=media_list)
             # Add download if needed
             if media_type == "video":
-                response = client.create_tweet(text=f"📸 — Esta mídia está disponível para download em: https://services.jaobernardi.space/twitter/video/url/{quote(url, safe='')}", in_reply_to_tweet_id=1508188950967558147)
+                response = client.create_tweet(text=f"📸 — Esta mídia está disponível para download em: https://services.jaobernardi.space/twitter/video/url/{quote(url, safe='')}", in_reply_to_tweet_id=archived.data['id'])
 
             # Update the database
             database.add_media(media_list, category, text, status.user.id, status.id)
