@@ -7,13 +7,16 @@ import uuid
 
 
 
-def send_dms(recipients, *args, **kwargs):
+def send_dms(recipients, text, *args, **kwargs):
     if not isinstance(recipients, list):
         recipients = [recipients]
+    if not isinstance(text, list):
+        text = [text]
     api = auth.get_api()
     out = []
     for id in recipients:
-        out.append(api.send_direct_message(id, *args, **kwargs))
+        for t in text:
+            out.append(api.send_direct_message(id, text=t, *args, **kwargs))
     return out
 
 
