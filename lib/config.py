@@ -1,46 +1,18 @@
 import json
 
 
-def get_stream_url():
-    return get_data()['stream_url']
-
-def get_id():
-    return get_data()["user_id"]
-
-def get_video_id():
-    return get_data()["video_thread"]
-
-def get_admin():
-    return get_data()["admin"]
-
 def get_data():
-    with open("config.json", "rb") as file:
-        data = json.load(file)
+    with open("config.json", "rb") as f:
+        data = json.load(f)
     return data
 
-def get_notifiers():
-    return get_data()['notifiers']
 
-def get_database():
-    return get_data()["database"]
 
-def get_bearer():
-    return get_data()["bearer_token"]
+def __getattr__(attr):
+    if attr.startswith("get_"):
+        return (lambda: get_data()[attr.removeprefix("get_")])
+    return get_data()[attr]
 
-def get_stream_auth():
-    return get_data()['stream_auth']
 
-def get_api_token():
-    return get_data()["consumer_key"]
-
-def get_api_secret():
-    return get_data()["consumer_secret"]
-
-def get_access_token():
-    return get_data()["access_token"]
-
-def get_image_id():
-    return get_data()["image_thread"]
-
-def get_access_token_secret():
-    return get_data()["access_token_secret"]
+def __dir__():
+    return [i for i in get_data().keys()]
