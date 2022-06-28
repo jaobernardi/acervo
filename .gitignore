@@ -1,7 +1,0 @@
-/.DS_Store
-/cache/*
-/config.json
-__pycache__/
-intake.txt
-database.sql
-.vscode/
